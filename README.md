@@ -17,3 +17,5 @@ The screw holles are made smaller and screws are heated using a soldering iron b
 ## Status
 
 Just starting the project, so it is not yet usable.
+
+![3D Preview](Screenshot.png)
