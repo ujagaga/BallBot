@@ -28,3 +28,15 @@ into the “Additional Board Manager URLs” field
 * web: http://www.radinaradionica.com
 * email: ujagaga@gmail.com
 
+## ESP32 Pinout
+Label  	GPIO  	Use			Reason
+D0	0	Sens Trig 10K to Vcc	must be HIGH during boot and LOW for flashing
+TX0	1	No			Tx pin, used for flashing and debugging
+D2	2	Direction 10K to GND	must be LOW during boot
+RX0	3	No			Rx pin, used for flashing and debugging
+D4	4	Speed			Connected to the on-board Flash LED
+D12	12	Servo 1			must be LOW during boot
+D13	13	Servo 2
+D14	14	Servo 3
+D15	15	No			must be HIGH during boot, prevents startup log if pulled LOW
+RX2	16	Sens Echo
