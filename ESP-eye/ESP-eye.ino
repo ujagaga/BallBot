@@ -1,10 +1,7 @@
 #include <esp_camera.h>
-#include <WiFi.h>
 #include "camera_pins.h"
 #include "config.h"
-#include "app_httpd.h"
-#include "IR_ctrl.h"
-
+#include "wifi_connection.h"
 
 void setup() {
   Serial.begin(115200);
@@ -69,32 +66,21 @@ void setup() {
     s->set_framesize(s, FRAMESIZE_SVGA);
   }
 
+  WIFIC_init();
 
-// Setup LED FLash if LED pin is defined in camera_pins.h
-#if defined(LED_GPIO_NUM)
-  setupLedFlash(LED_GPIO_NUM);
-#endif
-
-  IRCTRL_send(CMD_IR_OFF);
-
-  WiFi.begin(ssid, password);
-  WiFi.setSleep(false);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
-
-  startCameraServer();
-
-  Serial.print("Camera Ready! Use 'http://");
-  Serial.print(WiFi.localIP());
-  Serial.println("' to connect");
 }
 
 void loop() {
-  // Do nothing. Everything is done in another task by the web server
-  delay(1000);
+  if(OTA_updateInProgress()){
+    OTA_process();
+  }else{
+    if(WIFIC_isApMode()){
+      HTTP_SERVER_process();
+    }else{
+      HTTP_CLIENT_process();    
+      MQTT_process();
+    }   
+    
+    WIFIC_process();       
+  } 
 }

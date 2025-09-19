@@ -22,7 +22,6 @@
 #include <pgmspace.h> 
 #include <Arduino.h>
 #include "camera_pins.h"
-#include "IR_ctrl.h"
 
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
@@ -519,10 +518,4 @@ void startCameraServer()
     {
         httpd_register_uri_handler(stream_httpd, &stream_uri);
     }
-}
-
-void setupLedFlash(int pin) 
-{
-    ledcSetup(LED_LEDC_CHANNEL, 5000, 8);
-    ledcAttachPin(pin, LED_LEDC_CHANNEL);
 }
