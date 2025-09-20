@@ -10,7 +10,7 @@ if ! sudo apt update -y; then
   exit 1
 fi
 
-if ! sudo apt install -y python3-pip python3-venv; then
+if ! sudo apt install -y python3-pip python3-venv libgl1; then
   echo "Error: Failed to install dependencies. Aborting installation."
   exit 1
 fi
