@@ -39,24 +39,28 @@ void TCPC_Process(){
     if (c == '\n' || c == '\r') {
       // End of command
       cmd_buffer.trim();  // remove whitespace
-      String response = "";
+      String esp32_response = "";
 
       if (cmd_buffer.equalsIgnoreCase("start")) {
         streamingFlag = true;
-        response = "OK";
+        esp32_response = "OK start";
         Serial.println("Streaming started");
       } else if (cmd_buffer.equalsIgnoreCase("stop")) {
         streamingFlag = false;
-        response = "OK";
+        esp32_response = "OK stop";
         Serial.println("Streaming stopped");
       } else{
-        response = "Unknown command";
+        esp32_response = "Unknown command";
+        Serial.println("Unknown command");
       }
-      uint32_t len = response.length();
-      uint8_t type = 1;  // text 
-      client.write(&type, 1);
-      client.write((uint8_t*)&len, 4);
-      client.write((const uint8_t*)response.c_str(), len);
+
+      if(esp32_response.length() > 1){
+        uint32_t len = esp32_response.length();
+        uint8_t type = 1;  // text 
+        client.write(&type, 1);
+        client.write((uint8_t*)&len, 4);
+        client.write((const uint8_t*)esp32_response.c_str(), len);
+      }
 
       cmd_buffer = ""; // reset buffer
     } else {
