@@ -55,6 +55,22 @@ def setup_logger():
     return logger_obj
 
 
+def get_response(wait=True):
+    with tcp_server.lock:
+        start_time = time.time()
+        while time.time() - start_time < config.RESPONSE_TIMEOUT:
+            if tcp_server.latest_text is None:
+                if not wait:
+                    return None
+                time.sleep(0.05)
+            else:
+                # Copy then clear
+                message = tcp_server.latest_text
+                tcp_server.latest_text = None
+                return message
+        return None
+
+
 def generate():
     while True:
         with tcp_server.lock:
@@ -106,6 +122,7 @@ def last_text():
 def api_control():
     cmd = request.args.get("cmd", "").lower()
     value = request.args.get("val", "1").lower()
+    wait_for_response = request.args.get("wait", "no").lower()
 
     if not tcp_server.esp_client:
         return jsonify({"status": "error", "message": "ESP32 not connected"}), 400
@@ -147,7 +164,8 @@ def api_control():
     else:
         return jsonify({"status": "error", "message": f"Unknown command '{cmd}'"}), 400
 
-    return jsonify({"status": "ok", "message": message}), 200
+    esp32_response = get_response(wait_for_response != "no")
+    return jsonify({"status": "ok", "message": message,"response": esp32_response}), 200
 
 
 if __name__ == "__main__":
