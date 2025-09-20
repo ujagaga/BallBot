@@ -11,6 +11,7 @@ import sys
 
 latest_frame = None
 frame_timestamp = None
+frame_count = 0
 latest_text = None
 text_timestamp = None
 esp_client = None
@@ -31,7 +32,7 @@ def recv_all(conn, length):
     return buf
 
 def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
-    global latest_frame, frame_timestamp, esp_client
+    global latest_frame, frame_timestamp, esp_client, latest_text, text_timestamp, frame_count
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -77,6 +78,9 @@ def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
                             with lock:
                                 latest_frame = frame
                                 frame_timestamp = time.time()
+                                frame_count += 1
+                                if frame_count > 1000:
+                                    frame_count = 0
                         else:
                             logger.warning("Failed to decode frame")
                     elif msg_type == 1:
