@@ -2,13 +2,11 @@
 #define CONFIG_H
 
 #define TCP_SERVER_URL          "ujagaga.tplinkdns.com"
-#define TCP_SERVER_URL          "192.168.0.200"
-#define TCP_SERVER_PORT         5100
+#define TCP_SERVER_URL          "192.168.0.201"
+#define TCP_SERVER_PORT         9010
 
 // Capture and send an image every few ms
 #define STREAM_RATE_MS          200
-
-
 
 #define RELAY_1_PIN             16   
 #define RELAY_2_PIN             17  
@@ -17,13 +15,6 @@
 
 // 5 minutes to start the OTA update. If not, stop the service.
 #define UPDATE_TIMEOUT          (300000ul)
-#define MQTT_SERVER             "ujagaga.tplinkdns.com"
-#define MQTT_PORT		50000	
-#define MQTT_USER               "rada"
-#define MQTT_PASS               "gagisa"
-#define MQTT_TOPIC              "ballbot"
-#define REPORT_URL              "ujagaga.tplinkdns.com:8080"
-
 #define AP_NAME_PREFIX          "ballbot_"
 
 #define WIFI_PASS_EEPROM_ADDR   (0)

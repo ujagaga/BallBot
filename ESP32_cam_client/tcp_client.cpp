@@ -39,13 +39,25 @@ void TCPC_Process(){
     if (c == '\n' || c == '\r') {
       // End of command
       cmd_buffer.trim();  // remove whitespace
+      String response = "";
+
       if (cmd_buffer.equalsIgnoreCase("start")) {
         streamingFlag = true;
+        response = "OK";
         Serial.println("Streaming started");
       } else if (cmd_buffer.equalsIgnoreCase("stop")) {
         streamingFlag = false;
+        response = "OK";
         Serial.println("Streaming stopped");
+      } else{
+        response = "Unknown command";
       }
+      uint32_t len = response.length();
+      uint8_t type = 1;  // text 
+      client.write(&type, 1);
+      client.write((uint8_t*)&len, 4);
+      client.write((const uint8_t*)response.c_str(), len);
+
       cmd_buffer = ""; // reset buffer
     } else {
       cmd_buffer += c;
@@ -57,7 +69,10 @@ void TCPC_Process(){
 
     camera_fb_t* fb = CAM_Capture();
     if (fb) {
+      uint8_t imgType = 0;  // image
       uint32_t len = fb->len;
+
+      client.write(&imgType, 1);    // Set message type: image
       client.write((uint8_t*)&len, sizeof(len));
       client.write(fb->buf, fb->len);
       CAM_Dispose(fb);

@@ -2,8 +2,8 @@
 #include "tcp_client.h"
 #include "camera.h"
 
-const char* ssid     = "OhanaBerar";
-const char* password = "ohana130315";
+const char* ssid     = "OhanaCode_2G";
+const char* password = "0hana0ffice";
 
 
 void setup() {
