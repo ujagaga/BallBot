@@ -44,7 +44,8 @@ def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
             conn, addr = s.accept()
             esp_client = conn
             logger.info(f"Connected by {addr}")
-            conn.settimeout(1.0)  # helps detect abrupt disconnects
+            conn.settimeout(3.0)  # helps detect abrupt disconnects
+            msg_type = 255
 
             while True:
                 try:
@@ -92,6 +93,8 @@ def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
                         logger.warning(f"Unknown msg_type: {msg_type}")
 
                 except socket.timeout:
+                    if msg_type == 255:
+                        break
                     continue
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
