@@ -1,7 +1,7 @@
 #include <WiFi.h>
 #include "config.h"
 #include "camera.h"
-
+#include "motor.h"
 
 static WiFiClient client;
 static bool streamingFlag = false;
@@ -16,7 +16,7 @@ static bool maintain_connection(){
   }
 
   if((millis() - lastTcpConnectAttemptTime) > 1000){
-    Serial.println("No server connection, reconnecting...");
+    Serial.printf("No connection to %s:%d, reconnecting...\n", TCP_SERVER_URL, TCP_SERVER_PORT);
     lastTcpConnectAttemptTime = millis();
     if (!client.connect(TCP_SERVER_URL, TCP_SERVER_PORT)) {
       Serial.println("Failed");

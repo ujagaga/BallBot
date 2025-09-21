@@ -1,4 +1,4 @@
-# ESP 32 Eye #
+# ESP 32 Camera Client #
 
 I made this for my robot to be able to stream video so I can process it remotelly.
 
@@ -14,7 +14,7 @@ into the “Additional Board Manager URLs” field
 
 3. Go to "Tools > Board > Boards Manager" and search for "esp32" Install "esp32 by Espressif Systems" and "Arduino ESP32 Boards"
 
-4. Go to "Sketch > Include Library > manage Libraries" and install "ArduinoOTA"
+4. Go to "Sketch > Include Library > manage Libraries" and install "ArduinoOTA" and "ESP32Servo"
 
 5. Connect your ESP32-cam board, select it in the boards manager and program it.
 

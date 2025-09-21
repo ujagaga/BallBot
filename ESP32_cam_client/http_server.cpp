@@ -123,24 +123,10 @@ static const char OTA_HTML[] PROGMEM = R"(
 
 /* Declaring a web server object. */
 WebServer* webServer = nullptr;
-static bool serverRunning = false;
-
+static bool isStationConnected = false;
 
 static void showNotFound(void){
   webServer->send(404, "text/html; charset=iso-8859-1","<html><head> <title>404 Not Found</title></head><body><h1>Not Found</h1></body></html>"); 
-}
-
-static void showStatusPage(bool goToHome = false) {    
-  Serial.println("showStatusPage");
-  String response = FPSTR(HTML_BEGIN);
-  response += "<h1>Connection Status</h1><p>";
-  response += WIFIC_getStatus() + "</p>";
-  if(goToHome){
-    /* Add redirect timer. */
-    response += FPSTR(REDIRECT_HTML);
-  }
-  response += FPSTR(HTML_END);
-  webServer->send(200, "text/html", response);   
 }
 
 static void startOtaUpdate(void){
@@ -150,8 +136,15 @@ static void startOtaUpdate(void){
   OTA_init();    
 }
 
-static void showRedirectPage(void){  
-  showNotFound();
+static void showStatusPage() {    
+  Serial.println("showStatusPage");
+  String response = FPSTR(HTML_BEGIN);
+  response += "<h1>Connection Status</h1><p>";
+  response += statusMessage + "</p>";
+  /* Add redirect timer. */
+  response += FPSTR(REDIRECT_HTML);
+  response += FPSTR(HTML_END);
+  webServer->send(200, "text/html", response);   
 }
 
 static void selectAP(void) {   
@@ -170,8 +163,8 @@ static void saveWiFi(void){
   String pass = webServer->arg("p");
   
   if((ssid.length() > 63) || (pass.length() > 63)){
-      WIFIC_setStatus("Sorry, this module can only remember SSID and a PASSWORD up to 63 bytes long.");
-      showRedirectPage(); 
+      statusMessage = "Sorry, this module can only remember SSID and a PASSWORD up to 63 bytes long.";
+      showStatusPage(); 
       return;
   } 
 
@@ -179,8 +172,8 @@ static void saveWiFi(void){
   String st_pass = WIFIC_getStPass();
 
   if(st_ssid.equals(ssid) && st_pass.equals(pass)){
-      WIFIC_setStatus("All parameters are already set as requested.");
-      showRedirectPage();      
+      statusMessage = "All parameters are already set as requested.";
+      showStatusPage();      
       return;
   }   
 
@@ -195,28 +188,26 @@ static void saveWiFi(void){
   }else{       
     http_statusMessage = "Saving settings and switching to AP mode only.";    
   }
-  http_statusMessage += "<br>If you can not connect to this device 20 seconds from now, please, reset it.";
 
-  WIFIC_setStatus(http_statusMessage);
+  statusMessage = http_statusMessage;
   showStatusPage();
 
-  volatile int i;
-
-  /* Keep serving http to display the status page*/
-  for(i = 0; i < 100000; i++){
-    webServer->handleClient(); 
-  } 
-
-  ESP.restart();
+  // volatile int i;
+  // /* Keep serving http to display the status page*/
+  // for(i = 0; i < 100000; i++){
+  //   webServer->handleClient(); 
+  // }  
+  // ESP.restart();
 }
 
 bool HTTP_SERVER_isRunning() {
-    return serverRunning;
+    return webServer != nullptr;
 }
 
 void HTTP_SERVER_init(void) {
-    if (serverRunning) return;
-    if (webServer != nullptr) delete webServer;
+    if (webServer != nullptr) return;
+
+    IPAddress apIp = WIFIC_getApIp();
 
     webServer = new WebServer(80);
     webServer->on("/favicon.ico", showNotFound);
@@ -226,22 +217,20 @@ void HTTP_SERVER_init(void) {
     webServer->onNotFound(selectAP);
     webServer->begin();
 
-    serverRunning = true;
-    Serial.println("[HTTP] Server started");
+    Serial.println("HTTP Server started");
 }
 
 void HTTP_SERVER_stop(void) {
-    if (!serverRunning) return;
+    if (!webServer) return;
     webServer->stop();
     delete webServer;
     webServer = nullptr;
-    serverRunning = false;
-    Serial.println("[HTTP] Server stopped");
+    Serial.println("HTTP Server stopped");
 }
 
 
 void HTTP_SERVER_process(void) {
-  if (serverRunning && webServer) {
-      webServer->handleClient();
+  if (webServer) {   
+    webServer->handleClient();
   }
 }
