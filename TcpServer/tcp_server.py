@@ -92,7 +92,7 @@ def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
                         logger.warning(f"Unknown msg_type: {msg_type}")
 
                 except socket.timeout:
-                    break
+                    continue
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     logger.exception(f"TCP error at line {exc_tb.tb_lineno}: {e}")
