@@ -18,8 +18,6 @@ esp_client = None
 lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG,
-                    format="%(asctime)s [%(levelname)s] %(message)s")
 
 def recv_all(conn, length):
     """Read exactly length bytes from socket or return None on disconnect."""
