@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <Update.h>
 #include "config.h"
 #include "camera.h"
 #include "motor.h"
@@ -49,7 +50,42 @@ void TCPC_Process(){
         streamingFlag = false;
         esp32_response = "OK stop";
         Serial.println("Streaming stopped");
-      } else{
+      }else if (cmd_buffer.startsWith("fwupdate:")) {
+        streamingFlag = false;
+        uint32_t fwSize = cmd_buffer.substring(9).toInt();
+        Serial.printf("Starting firmware update, size=%u bytes\n", fwSize);
+
+        if (!Update.begin(fwSize)) {
+          Serial.println("Update.begin failed!");
+          client.write((const uint8_t*)"ERR begin\n", 10);
+          return;
+        } else {
+          client.write((const uint8_t*)"OK ready\n", 9);
+        }
+
+        uint32_t received = 0;
+        uint8_t buf[1024];
+        while (received < fwSize) {
+          if (client.available()) {
+              size_t len = client.readBytes(buf, sizeof(buf));
+              Update.write(buf, len);
+              received += len;
+
+              // Send progress to server in % (0–100)
+              uint8_t percent = (received * 100) / fwSize;
+              String prog_msg = "PROGRESS:" + String(percent) + "\n";
+              client.write((const uint8_t*)prog_msg.c_str(), prog_msg.length());
+          }
+          delay(1); // yield to watchdog
+        }
+
+        if (Update.end(true)) {
+          client.write((const uint8_t*)"DONE\n", 5);
+          ESP.restart();
+        } else {
+          client.write((const uint8_t*)"ERR update\n", 11);
+        }
+      }else{
         esp32_response = "Unknown command";
         Serial.println("Unknown command");
       }

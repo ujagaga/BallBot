@@ -1,0 +1,9 @@
+body {
+    font-family: sans-serif;
+    margin: 40px;
+}
+.box {
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 10px;
+}

@@ -1,5 +1,5 @@
 #include <ESP32Servo.h>
-#include "config.h"
+#include "motor.h"
 
 Servo servoArms;
 Servo servoHands;

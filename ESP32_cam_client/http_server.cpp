@@ -9,7 +9,6 @@
 #include <pgmspace.h>
 #include "wifi_connection.h"
 #include "config.h"
-#include "ota.h"
 #include "web_socket.h"
 
 
@@ -111,29 +110,12 @@ static const char REDIRECT_HTML[] PROGMEM = R"(
 </script> 
 )";
 
-static const char OTA_HTML[] PROGMEM = R"(
-<html><head> <title>OTA Update</title></head>
-<body>
-  <h1>OTA Update</h1>
-  <p>Starting the update server.</p>
-  <p>If no update starts in 5 minutes, will stop the update server and restore default functionallity.</p>
-</body>
-</html>
-)";
-
 /* Declaring a web server object. */
 WebServer* webServer = nullptr;
 static bool isStationConnected = false;
 
 static void showNotFound(void){
   webServer->send(404, "text/html; charset=iso-8859-1","<html><head> <title>404 Not Found</title></head><body><h1>Not Found</h1></body></html>"); 
-}
-
-static void startOtaUpdate(void){
-  String response = FPSTR(OTA_HTML);
-  webServer->send(200, "text/html; charset=iso-8859-1", response); 
-  webServer->handleClient(); 
-  OTA_init();    
 }
 
 static void showStatusPage() {    
@@ -213,7 +195,6 @@ void HTTP_SERVER_init(void) {
     webServer->on("/favicon.ico", showNotFound);
     webServer->on("/", selectAP);
     webServer->on("/wifisave", saveWiFi);
-    webServer->on("/update", startOtaUpdate);
     webServer->onNotFound(selectAP);
     webServer->begin();
 

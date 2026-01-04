@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Firmware Upload</title>
+    <link rel="icon" type="image/x-icon" href="static/favicon.png">
+    <link rel="stylesheet" href="static/css/fwupload.css" />
+  </head>
+  <body>
+    <div class="box">
+      <h1>Upload ESP32 Firmware</h1>
+
+      <!-- Upload Form -->
+      <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput" accept=".bin" required>
+        <input type="submit" value="Upload">
+      </form>
+
+      <!-- Progress bar for TCP update -->
+      <div id="updateSection" style="display:none; margin-top:20px;">
+        <button id="startUpdateBtn">Start Firmware Update</button>
+        <div style="margin-top:10px;">
+          <progress id="progressBar" value="0" max="100" style="width:100%;"></progress>
+          <span id="progressText">0%</span>
+        </div>
+        <div id="updateStatus"></div>
+      </div>
+
+      <div id="message" style="margin-top:20px;"></div>
+    </div>
+  </body>
+<script src="/static/js/fwupdate.js"></script>
+</html>

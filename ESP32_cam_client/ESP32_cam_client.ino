@@ -4,7 +4,6 @@
 #include "wifi_connection.h"
 #include "web_socket.h"
 #include "http_server.h"
-#include "ota.h"
 #include "motor.h"
 
 void setup() {
@@ -23,29 +22,25 @@ void setup() {
   MOTOR_init();
 }
 
-void loop() {
-  if(OTA_updateInProgress()){
-    OTA_process();
-  }else{    
-    WIFIC_process();
-    
-    if (WIFIC_isApActive()) {
-      // AP is active, run the HTTP server
-      if (!HTTP_SERVER_isRunning()) {
-        HTTP_SERVER_init();
-        WS_init();
-      }
-      HTTP_SERVER_process();
-      WS_process();
-    } else {
-      // Connected as a client. Hopefully to the internet. 
-      // Shut down HTTP server 
-      if (HTTP_SERVER_isRunning()) {
-        WS_dispose();
-        HTTP_SERVER_stop();          
-      }     
-
-      TCPC_Process(); 
+void loop() {  
+  WIFIC_process();
+  
+  if (WIFIC_isApActive()) {
+    // AP is active, run the HTTP server
+    if (!HTTP_SERVER_isRunning()) {
+      HTTP_SERVER_init();
+      WS_init();
     }
-  }
+    HTTP_SERVER_process();
+    WS_process();
+  } else {
+    // Connected as a client. Hopefully to the internet. 
+    // Shut down HTTP server 
+    if (HTTP_SERVER_isRunning()) {
+      WS_dispose();
+      HTTP_SERVER_stop();          
+    }     
+
+    TCPC_Process(); 
+  }  
 }

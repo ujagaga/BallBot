@@ -3,13 +3,16 @@
 import threading
 import cv2
 import time
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request, jsonify, render_template, flash, stream_with_context
 import config
 import logging
 from logging.handlers import RotatingFileHandler
 import argparse
 import os
 import tcp_server
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'firmware')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--mode", default="development", help="Mode to run the server in", required=False)
@@ -20,6 +23,12 @@ execution_mode = args.mode
 
 # Flask server
 app = Flask(__name__)
+app.config["SECRET_KEY"] = config.FLASK_APP_SECRET_KEY
+app.config.update(
+    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
 
 def setup_logger():
     logger_obj = logging.getLogger()
@@ -97,6 +106,61 @@ def frame_info():
             return jsonify({"status": "error", "message": "No frame received yet"}), 404
         age_ms = int((time.time() - tcp_server.frame_timestamp) * 1000)
         return jsonify({"status": "ok", "frame_age_ms": age_ms, "frame_count": tcp_server.frame_count}), 200
+
+
+@app.route("/upload_fw", methods=["GET", "POST"])
+def upload_fw():
+    if request.method == "POST":
+        if 'file' not in request.files:
+            return "No file part", 400
+        f = request.files['file']
+        if f.filename == '':
+            return "No selected file", 400
+        if not f.filename.lower().endswith(".bin"):
+            return "Only .bin files are allowed", 400
+
+        save_path = os.path.join(UPLOAD_FOLDER, "firmware.bin")
+        f.save(save_path)
+        flash(f"Firmware uploaded successfully!")
+
+    return render_template("fwupload.html" )
+
+
+@app.route("/start_update", methods=["POST"])
+def start_update():
+    firmware_path = os.path.join(UPLOAD_FOLDER, "firmware.bin")
+    if not os.path.exists(firmware_path):
+        return "No firmware uploaded", 400
+
+    if not tcp_server.esp_client:
+        return "ESP32 not connected", 400
+
+    def stream_firmware():
+        # Read and send the firmware in chunks
+        with open(firmware_path, "rb") as f:
+            while chunk := f.read(512):
+                tcp_server.esp_client.sendall(chunk)
+                yield chunk  # optional: can be used to stream back to browser for progress
+
+    return Response(stream_firmware(), mimetype='application/octet-stream')
+
+
+@app.route("/update_progress")
+def update_progress():
+    if not tcp_server.esp_client:
+        return "ESP32 not connected", 400
+
+    def event_stream():
+        while True:
+            if tcp_server.esp_client and tcp_server.esp_client.connected():
+                while tcp_server.esp_client.available():
+                    line = tcp_server.esp_client.read(1024).decode(errors='ignore')
+                    for l in line.splitlines():
+                        if l.startswith("PROGRESS:") or l in ("DONE", "ERR update"):
+                            yield f"data: {l}\n\n"
+            time.sleep(0.05)
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 @app.route('/api')
