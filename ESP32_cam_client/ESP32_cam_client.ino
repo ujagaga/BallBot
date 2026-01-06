@@ -2,45 +2,35 @@
 #include "tcp_client.h"
 #include "camera.h"
 #include "wifi_connection.h"
-#include "web_socket.h"
-#include "http_server.h"
 #include "motor.h"
+#include "distance.h"
+
+void MAIN_debug(String message){
+#ifdef DBG
+  Serial.println(message);
+#endif
+}
 
 void setup() {
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);   
+#ifdef DBG
+  Serial.begin(115200, TX_ONLY);
+  Serial.setDebugOutput(true); 
   Serial.print("\n\n\n");
+#endif  
+     
   esp_reset_reason_t reason = esp_reset_reason();
-  Serial.printf("Reset reason: %d\n", reason);
-  Serial.println("\n"); 
+  MAIN_debug("Reset reason: %d\n\n", reason);
 
   if(!CAM_Init()){
-    Serial.println("Camera init failed");
+    MAIN_debug("Camera init failed");
     while (true);
   }
   WIFIC_init();  
   MOTOR_init();
+  DISTANCE_init();
 }
 
 void loop() {  
   WIFIC_process();
-  
-  if (WIFIC_isApActive()) {
-    // AP is active, run the HTTP server
-    if (!HTTP_SERVER_isRunning()) {
-      HTTP_SERVER_init();
-      WS_init();
-    }
-    HTTP_SERVER_process();
-    WS_process();
-  } else {
-    // Connected as a client. Hopefully to the internet. 
-    // Shut down HTTP server 
-    if (HTTP_SERVER_isRunning()) {
-      WS_dispose();
-      HTTP_SERVER_stop();          
-    }     
-
-    TCPC_Process(); 
-  }  
+  TCPC_Process();  
 }

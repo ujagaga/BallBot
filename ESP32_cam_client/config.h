@@ -1,26 +1,12 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define TCP_SERVER_URL          "ujagaga.tplinkdns.com"
-#define TCP_SERVER_PORT         49010
-// #define TCP_SERVER_URL          "192.168.0.200"
-// #define TCP_SERVER_PORT         9010
+#define TCP_SERVER_URL          "192.168.0.200"
+#define TCP_SERVER_PORT         9010
 
 // Capture and send an image every few ms
 #define STREAM_RATE_MS          200
 
-#define AP_MODE_TIMEOUT_S       120
-
-// 5 minutes to start the OTA update. If not, stop the service.
-#define UPDATE_TIMEOUT          (300000ul)
-#define AP_NAME_PREFIX          "Ballbot_"
-
-#define WIFI_PASS_EEPROM_ADDR   (0)
-#define WIFI_PASS_SIZE          (32)
-#define SSID_EEPROM_ADDR        (WIFI_PASS_EEPROM_ADDR + WIFI_PASS_SIZE)
-#define SSID_SIZE               (32)
-#define EEPROM_SIZE             (WIFI_PASS_SIZE + SSID_SIZE)   
-
-inline String statusMessage = "";  // single shared instance across all .cpp files
+extern void MAIN_debug(String message);
 
 #endif
