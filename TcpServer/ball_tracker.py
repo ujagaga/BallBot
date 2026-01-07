@@ -45,5 +45,8 @@ def detect_ball(frame):
             # Draw circle
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 0), 2)
             ball_coords = (int(x), int(y), int(radius))
+            print("+")
+    else:
+        print("-")
 
     return frame, ball_coords
