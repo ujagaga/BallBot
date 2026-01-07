@@ -4,8 +4,8 @@ import numpy as np
 
 # --- HSV color range for the ball (tweak for your ball color) ---
 # Example: a standard orange ping-pong ball
-LOWER_COLOR = np.array([5, 150, 150])    # lower HSV bound
-UPPER_COLOR = np.array([15, 255, 255])   # upper HSV bound
+LOWER_COLOR = np.array([31, 57, 48])    # lower HSV bound
+UPPER_COLOR = np.array([179, 255, 255])   # upper HSV bound
 
 # Minimum radius to consider a detection
 MIN_RADIUS = 5
