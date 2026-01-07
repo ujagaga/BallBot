@@ -84,10 +84,14 @@ def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
                     elif msg_type == 1:
                         # --- Text message ---
                         message = payload.decode("utf-8", errors="ignore")
-                        logger.info(f"Received text: {message}")
+                        # logger.info(f"Received text: {message}")
                         with lock:
                             latest_text = message
                             text_timestamp = time.time()
+                    elif msg_type == 2:
+                        # --- Debug message ---
+                        message = payload.decode("utf-8", errors="ignore")
+                        logger.info(f"DBG: {message}")
                     else:
                         logger.warning(f"Unknown msg_type: {msg_type}")
 

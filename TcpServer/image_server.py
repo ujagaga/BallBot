@@ -92,6 +92,8 @@ def generate():
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
+        time.sleep(0.05)
+
 
 @app.route('/video_feed')
 def video_feed():
@@ -216,6 +218,11 @@ def api_control():
 
     esp32_response = get_response(last_ts)
     return jsonify({"status": "ok", "response": f"{esp32_response}"}), 200
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 CAM Controller</title>
+    <link rel="stylesheet" href="static/css/index.css" />
+
+</head>
+<body>
+
+<h1>ESP32 CAM Control Panel</h1>
+
+<div class="container">
+    <!-- Video -->
+    <div class="video">
+        <img src="/video_feed" width="100%" />
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+
+        <div class="section">
+            <h3>Streaming</h3>
+            <button onclick="sendCmd('start')">Start</button>
+            <button onclick="sendCmd('stop')">Stop</button>
+        </div>
+
+        <div class="section">
+            <h3>Motion</h3>
+            <button onclick="sendCmd('forward')">Forward</button>
+            <button onclick="sendCmd('reverse')">Reverse</button>
+            <br>
+            Speed:
+            <input type="number" id="speed" value="100">
+            <button onclick="sendCmd('speed', getVal('speed'))">Set Speed</button>
+            <br>
+            Go (ms):
+            <input type="number" id="go_time" value="500">
+            <button onclick="sendCmd('go', getVal('go_time'))">Go</button>
+        </div>
+
+        <div class="section">
+            <h3>Servo Motors</h3>
+            Servo 1:
+            <input type="number" id="m1" value="90">
+            <button onclick="sendCmd('motor1', getVal('m1'))">Set</button><br>
+
+            Servo 2:
+            <input type="number" id="m2" value="90">
+            <button onclick="sendCmd('motor2', getVal('m2'))">Set</button><br>
+
+            Servo 3:
+            <input type="number" id="m3" value="90">
+            <button onclick="sendCmd('motor3', getVal('m3'))">Set</button>
+        </div>
+
+        <div class="section">
+            <h3>Distance Sensor</h3>
+            <button onclick="measureDistance()">Measure Distance</button>
+            <div id="distance_label">Distance: ---</div>
+        </div>
+
+        <div class="status" id="status">
+            Status: idle
+        </div>
+    </div>
+</div>
+</body>
+<script src="/static/js/index.js"></script>
+
+</html>
