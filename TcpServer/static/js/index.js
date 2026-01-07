@@ -3,8 +3,14 @@ function getVal(id) {
 }
 
 function setStatus(text) {
-    document.getElementById("status").innerText = "Status: " + text;
+    // Get current time
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString(); // HH:MM:SS format
+
+    // Update status div
+    document.getElementById("status").innerText = `[${timestamp}] Status: ${text}`;
 }
+
 
 function sendCmd(cmd, val = null) {
     let url = `/api?cmd=${cmd}`;
