@@ -26,6 +26,33 @@ The screw holles are made smaller and screws are heated using a soldering iron b
 3. RPI4 runs a Flask app to enable manual control, firmware upload, firmware update triggering and access to an API for external control
 4. A secondary python app will be created to automate the robot operation 
 
+## Setting up a Raspberry Pi 4
+
+The robot will connect to a wifi hotspot and then to the TCP server. As I am using a Raspberry pi 4, here is my setup.
+
+1. Unblock the wifi by setting up the wifi country `sudo raspi-config`→ Localisation Options → WLAN Country ...
+
+2. Configure wifi AP and make it persistent
+```
+sudo nmcli device wifi hotspot ifname wlan0 ssid BallBot password BallBot123
+sudo nmcli connection modify Hotspot connection.autoconnect yes
+nmcli device status
+```
+If you need to change the password: 
+```
+sudo nmcli connection modify Hotspot wifi-sec.psk 'New_strong_password'
+```
+
+3. Clone this repository and install the servers
+```
+cd ~
+git clone https://github.com/ujagaga/BallBot.git
+cd BallBot/TcpServer
+./install.sh
+```
+
+4. Open your web browser and navigate to the servers IP address at port 9000.
+
 ## Status
 
 Just starting the project, so it is not yet usable. For now, I believe the schematic and the 3D model are finished.
