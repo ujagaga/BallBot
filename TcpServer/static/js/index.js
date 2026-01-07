@@ -1,30 +1,25 @@
-const statusLog = [];
-const maxStatusMessages = 5;
+const MAX_LOG = 5;
+let logBuffer = [];
 
 function getVal(id) {
     return document.getElementById(id).value;
 }
 
-function setStatus(text) {
-    // Get current time
-    const now = new Date();
-    const timestamp = now.toLocaleTimeString(); // HH:MM:SS
-
-    // Build the message
-    const msg = `[${timestamp}] ${text}`;
-
-    // Add to log
-    statusLog.push(msg);
-
-    // Keep only last maxStatusMessages entries
-    if (statusLog.length > maxStatusMessages) {
-        statusLog.shift(); // remove oldest
-    }
-
-    // Display log
-    document.getElementById("status").innerText = statusLog.join("\n");
+function now() {
+    return new Date().toLocaleTimeString();
 }
 
+function setStatus(text) {
+    document.getElementById("status").innerText =
+        `Status [${now()}]: ${text}`;
+}
+
+function addLog(text) {
+    logBuffer.unshift(`[${now()}] ${text}`);
+    logBuffer = logBuffer.slice(0, MAX_LOG);
+    document.getElementById("log").innerHTML =
+        logBuffer.join("<br>");
+}
 
 function sendCmd(cmd, val = null) {
     let url = `/api?cmd=${cmd}`;
@@ -36,29 +31,17 @@ function sendCmd(cmd, val = null) {
         .then(r => r.json())
         .then(data => {
             if (data.status === "ok") {
-                setStatus(data.response || "OK");
+                setStatus("OK");
+                if (data.response) {
+                    addLog(data.response);
+                }
             } else {
-                setStatus("ERROR: " + data.message);
+                setStatus("ERROR");
+                addLog(data.message);
             }
         })
         .catch(err => {
-            setStatus("ERROR: " + err);
-        });
-}
-
-function measureDistance() {
-    fetch("/api?cmd=dist")
-        .then(r => r.json())
-        .then(data => {
-            if (data.status === "ok") {
-                document.getElementById("distance_label").innerText =
-                    "Distance: " + data.response;
-                setStatus("Distance measured");
-            } else {
-                setStatus("ERROR: " + data.message);
-            }
-        })
-        .catch(err => {
-            setStatus("ERROR: " + err);
+            setStatus("ERROR");
+            addLog(err.toString());
         });
 }

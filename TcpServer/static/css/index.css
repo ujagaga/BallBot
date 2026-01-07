@@ -33,7 +33,7 @@ button {
 }
 
 input {
-    width: 60px;
+    width: 70px;
     padding: 5px;
 }
 
@@ -47,4 +47,14 @@ input {
     background: #222;
     border-radius: 5px;
     font-family: monospace;
+}
+
+.log {
+    margin-top: 10px;
+    padding: 8px;
+    background: #151515;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 0.9em;
+    min-height: 80px;
 }

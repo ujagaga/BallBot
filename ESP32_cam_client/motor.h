@@ -11,7 +11,7 @@
 
 extern void MOTOR_init(void);
 extern void MOTOR_setServo(int id, int angle);
-extern void MOTOR_setDirection(bool forward);
 extern void MOTOR_stop(void);
 extern void MOTOR_move(int speed);
 extern void MOTOR_process(void);
+extern void MOTOR_setCmdTimeout(uint8_t timeout);

@@ -168,7 +168,7 @@ def update_progress():
 @app.route('/api')
 def api_control():
     cmd = request.args.get("cmd", "").lower()
-    value = request.args.get("val", "1").lower()
+    value = request.args.get("val", "").lower()
 
     if not tcp_server.esp_client:
         return jsonify({"status": "error", "message": "ESP32 not connected"}), 400
@@ -179,45 +179,60 @@ def api_control():
         tcp_server.latest_text = None
         tcp_server.text_timestamp = None
 
+    payload = None
+
+    # ---------- STREAM ----------
     if cmd == "start":
-        tcp_server.esp_client.sendall(b'start\n')
-        # message = "Streaming started"
+        payload = {"cmd": "stream", "enable": True}
+
     elif cmd == "stop":
-        tcp_server.esp_client.sendall(b'stop\n')
-        # message = "Streaming stopped"
-    elif cmd == "forward":
-        tcp_server.esp_client.sendall(b'fwd\n')
-        # message = "Streaming Set direction to forward"
-    elif cmd == "reverse":
-        tcp_server.esp_client.sendall(b'rev\n')
-        # message = "Set direction to reverse"
+        payload = {"cmd": "stream", "enable": False}
+
+    # ---------- MOTOR ----------
     elif cmd == "speed":
-        tcp_server.esp_client.sendall(f"speed:{value}".encode())
-        # message = f"Set speed to: {value}"
-    elif cmd == "go":
-        # Make sure to send "cmd=go" after setting speed and direction
-        tcp_server.esp_client.sendall(f"go:{value}".encode())
-        # message = f"Moving for {value} ms"
+        payload = {"cmd": "motor", "speed": int(value)}
+
+    elif cmd == "motor_stop":
+        payload = {"cmd": "motor", "stop": True}
+
+    elif cmd == "timeout":
+        payload = {"cmd": "motor", "timeout": int(value)}
+
+    # ---------- SERVOS ----------
     elif cmd == "motor1":
-        tcp_server.esp_client.sendall(f"m1:{value}".encode())
-        # message = f"Moving motor 1 to angle:{value}"
+        payload = {"cmd": "servo", "id": 0, "angle": int(value)}
+
     elif cmd == "motor2":
-        tcp_server.esp_client.sendall(f"m2:{value}".encode())
-        # message = f"Moving motor 2 to angle:{value}"
+        payload = {"cmd": "servo", "id": 1, "angle": int(value)}
+
     elif cmd == "motor3":
-        tcp_server.esp_client.sendall(f"m3:{value}".encode())
-        # message = f"Moving motor 3 to angle:{value}"
-    elif cmd == "dist":
-        tcp_server.esp_client.sendall(b"dist")
-        # message = "Measure distance"
-    elif cmd == "img_time":
-        tcp_server.esp_client.sendall(f"imt:{value}".encode())
-        # message = f"Set image capture time in millis to:{value}"
+        payload = {"cmd": "servo", "id": 2, "angle": int(value)}
+
+    # ---------- UNSUPPORTED / REMOVED ----------
+    elif cmd in ("forward", "reverse", "go", "dist", "img_time"):
+        return jsonify({
+            "status": "error",
+            "message": f"Command '{cmd}' not implemented in JSON protocol"
+        }), 400
+
     else:
-        return jsonify({"status": "error", "message": f"Unknown command '{cmd}'"}), 400
+        return jsonify({
+            "status": "error",
+            "message": f"Unknown command '{cmd}'"
+        }), 400
+
+    # ---------- SEND JSON ----------
+    msg = json.dumps(payload) + "\n"
+    tcp_server.esp_client.sendall(msg.encode("utf-8"))
 
     esp32_response = get_response(last_ts)
-    return jsonify({"status": "ok", "response": f"{esp32_response}"}), 200
+
+    return jsonify({
+        "status": "ok",
+        "sent": payload,
+        "response": esp32_response
+    }), 200
+
 
 
 @app.route("/")

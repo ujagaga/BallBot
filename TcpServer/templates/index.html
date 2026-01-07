@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>ESP32 CAM Controller</title>
-    <link rel="stylesheet" href="static/css/index.css" />
+    <link rel="stylesheet" href="/static/css/index.css">
 </head>
 <body>
 
@@ -12,7 +12,7 @@
 <div class="container">
     <!-- Video -->
     <div class="video">
-        <img src="/video_feed" width="100%" />
+        <img src="/video_feed" width="100%">
     </div>
 
     <!-- Controls -->
@@ -25,17 +25,15 @@
         </div>
 
         <div class="section">
-            <h3>Motion</h3>
-            <button onclick="sendCmd('forward')">Forward</button>
-            <button onclick="sendCmd('reverse')">Reverse</button>
-            <br>
+            <h3>Motor</h3>
             Speed:
-            <input type="number" id="speed" value="100">
+            <input type="number" id="speed" value="600">
             <button onclick="sendCmd('speed', getVal('speed'))">Set Speed</button>
-            <br>
-            Go (ms):
-            <input type="number" id="go_time" value="500">
-            <button onclick="sendCmd('go', getVal('go_time'))">Go</button>
+            <button onclick="sendCmd('motor_stop')">Stop Motor</button>
+            <br><br>
+            Timeout (ms):
+            <input type="number" id="timeout" value="255">
+            <button onclick="sendCmd('timeout', getVal('timeout'))">Set Timeout</button>
         </div>
 
         <div class="section">
@@ -53,17 +51,14 @@
             <button onclick="sendCmd('motor3', getVal('m3'))">Set</button>
         </div>
 
-        <div class="section">
-            <h3>Distance Sensor</h3>
-            <button onclick="measureDistance()">Measure Distance</button>
-            <div id="distance_label">Distance: ---</div>
-        </div>
-
         <div class="status" id="status">
             Status: idle
         </div>
+
+        <div class="log" id="log"></div>
     </div>
 </div>
-</body>
+
 <script src="/static/js/index.js"></script>
+</body>
 </html>
