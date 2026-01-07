@@ -42,8 +42,8 @@ def detect_ball(frame):
         dp=1.2,
         minDist=80,
         param1=120,
-        param2=22,
-        minRadius=10,
+        param2=25,
+        minRadius=15,
         maxRadius=80
     )
 
