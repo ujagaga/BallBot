@@ -1,126 +1,74 @@
 #include <WiFi.h>
-#include <Update.h>
 #include "camera.h"
-#include "motor.h"
 #include "tcp_client.h"
 
+// --- Globals ---
 static WiFiClient client;
 static bool streamingFlag = false;
-static uint32_t lastTcpConnectAttemptTime = 0;
-static String cmd_buffer = "";
 static uint32_t lastCaptureTime = 0;
+static String cmd_buffer = "";
 
-static bool maintain_connection(){
-  if (client.connected()){
-    return true;
-  }
-
-  if((millis() - lastTcpConnectAttemptTime) > 1000){
-    lastTcpConnectAttemptTime = millis();
-    if (!client.connect(TCP_SERVER_URL, TCP_SERVER_PORT)) {
-      return false;
+// --- TCP Connection / Streaming ---
+void TCPC_Process() {
+    // --- 1. Maintain TCP connection ---
+    if (!client.connected()) {
+        if (client) client.stop();  // close old client
+        if (client.connect(TCP_SERVER_URL, TCP_SERVER_PORT)) {
+            streamingFlag = true;  // start streaming immediately
+            TCPC_Debug("Connection established...");
+        } else {
+            delay(500); // wait and retry
+            return;
+        }
     }
-  }
-  
-  return true;
+
+    // --- 2. Read commands from server ---
+    while (client.available()) {
+        char c = client.read();
+        if (c == '\n' || c == '\r') {
+            cmd_buffer.trim();
+            if (cmd_buffer.length() > 0) {
+                if (cmd_buffer.equalsIgnoreCase("stop")) streamingFlag = false;
+                else if (cmd_buffer.equalsIgnoreCase("start")) streamingFlag = true;
+                
+                // send ACK to server
+                String resp = "OK:" + cmd_buffer;
+                uint32_t len = resp.length();
+                uint8_t type = 1;  // text
+                client.write(&type, 1);
+                client.write((uint8_t*)&len, 4);
+                client.write((const uint8_t*)resp.c_str(), len);
+            }
+            cmd_buffer = "";
+        } else {
+            cmd_buffer += c;
+        }
+    }
+
+    // --- 3. Capture and send frames ---
+    if (streamingFlag && (millis() - lastCaptureTime > STREAM_RATE_MS)) {
+        lastCaptureTime = millis();
+        camera_fb_t* fb = CAM_Capture();
+        if (fb) {
+            uint8_t type = 0;  // image
+            uint32_t len = fb->len;
+            client.write(&type, 1);
+            client.write((uint8_t*)&len, sizeof(len));
+            client.write(fb->buf, fb->len);
+            CAM_Dispose(fb);
+        }
+    }
 }
 
-bool TCPC_Debug(String message){  
-  if(client.connected() && (message.length() > 1)){
-    uint32_t len = message.length();
-    uint8_t type = 2;  // text 
-    client.write(&type, 1);
-    client.write((uint8_t*)&len, 4);
-    client.write((const uint8_t*)message.c_str(), len);
-    return true;
-  }
-
-  return false;
-}
-
-void TCPC_Process(){
-  if (!maintain_connection()){
-    return;
-  }
-
-  // Read commands from server
-  if(client.available()) {
-    char c = client.read();
-    if (c == '\n' || c == '\r') {
-      // End of command
-      cmd_buffer.trim();  // remove whitespace
-      String esp32_response = "";
-
-      if (cmd_buffer.equalsIgnoreCase("start")) {
-        streamingFlag = true;
-        esp32_response = "OK start";
-      } else if (cmd_buffer.equalsIgnoreCase("stop")) {
-        streamingFlag = false;
-        esp32_response = "OK stop";
-      }else if (cmd_buffer.startsWith("fwupdate:")) {
-        streamingFlag = false;
-        uint32_t fwSize = cmd_buffer.substring(9).toInt();
-
-        if (!Update.begin(fwSize)) {
-          client.write((const uint8_t*)"ERR begin\n", 10);
-          return;
-        } else {
-          client.write((const uint8_t*)"OK ready\n", 9);
-        }
-
-        uint32_t received = 0;
-        uint8_t buf[1024];
-        while (received < fwSize) {
-          if (client.available()) {
-              size_t len = client.readBytes(buf, sizeof(buf));
-              Update.write(buf, len);
-              received += len;
-
-              // Send progress to server in % (0–100)
-              uint8_t percent = (received * 100) / fwSize;
-              String prog_msg = "PROGRESS:" + String(percent) + "\n";
-              client.write((const uint8_t*)prog_msg.c_str(), prog_msg.length());
-          }
-          delay(1); // yield to watchdog
-        }
-
-        if (Update.end(true)) {
-          client.write((const uint8_t*)"DONE\n", 5);
-          ESP.restart();
-        } else {
-          client.write((const uint8_t*)"ERR update\n", 11);
-        }
-      }else{
-        esp32_response = "Unknown command";
-      }
-
-      if(esp32_response.length() > 1){
-        uint32_t len = esp32_response.length();
-        uint8_t type = 1;  // text 
+// --- Debug helper ---
+bool TCPC_Debug(String msg) {
+    if (client.connected() && msg.length() > 0) {
+        uint8_t type = 2;  // debug
+        uint32_t len = msg.length();
         client.write(&type, 1);
         client.write((uint8_t*)&len, 4);
-        client.write((const uint8_t*)esp32_response.c_str(), len);
-      }
-
-      cmd_buffer = ""; // reset buffer
-    } else {
-      cmd_buffer += c;
+        client.write((const uint8_t*)msg.c_str(), len);
+        return true;
     }
-  }
-
-  if(streamingFlag && ((millis() - lastCaptureTime) > STREAM_RATE_MS)){
-    lastCaptureTime = millis();
-
-    camera_fb_t* fb = CAM_Capture();
-    if (fb) {
-      uint8_t imgType = 0;  // image
-      uint32_t len = fb->len;
-
-      client.write(&imgType, 1);    // Set message type: image
-      client.write((uint8_t*)&len, sizeof(len));
-      client.write(fb->buf, fb->len);
-      CAM_Dispose(fb);
-    }
-  }
-  
+    return false;
 }

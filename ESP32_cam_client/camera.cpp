@@ -1,3 +1,4 @@
+// camera.cpp
 #include "camera.h"
 
 static bool camInitialized = false;
