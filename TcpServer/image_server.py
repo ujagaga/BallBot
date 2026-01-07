@@ -11,9 +11,7 @@ import argparse
 import os
 import tcp_server
 import json
-from ball_tracker import BallTracker
-
-ball_tracker = BallTracker()
+from ball_tracker import detect_ball
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'firmware')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -86,39 +84,30 @@ def get_response(last_timestamp=None):
 
 def generate():
     while True:
+        frame_bytes = None
+
         with tcp_server.lock:
-            if tcp_server.latest_frame is None:
-                continue
+            if tcp_server.latest_frame is not None:
+                frame = tcp_server.latest_frame.copy()
+            else:
+                frame = None
 
-            frame = tcp_server.latest_frame.copy()
+        if frame is not None:
+            frame, _ = detect_ball(frame)
 
-        # --- detect ball and draw overlay ---
-        frame, detection = ball_tracker.process(frame)
+            ok, jpeg = cv2.imencode(".jpg", frame)
+            if ok:
+                frame_bytes = jpeg.tobytes()
 
-        # Optional: debug / control hook
-        if detection:
-            cx = detection["x"]
-            cy = detection["y"]
-            r  = detection["radius"]
-            # Example:
-            # print(f"Ball @ {cx},{cy} r={r}")
-
-        # Encode for MJPEG stream
-        ok, jpeg = cv2.imencode('.jpg', frame)
-        if not ok:
-            continue
-
-        frame_bytes = jpeg.tobytes()
-
-        yield (
-            b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' +
-            frame_bytes +
-            b'\r\n'
-        )
+        if frame_bytes:
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n"
+                + frame_bytes
+                + b"\r\n"
+            )
 
         time.sleep(0.05)
-
 
 
 @app.route('/video_feed')
