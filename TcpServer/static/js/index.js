@@ -17,8 +17,9 @@ function setStatus(text) {
 function addLog(text) {
     logBuffer.unshift(`[${now()}] ${text}`);
     logBuffer = logBuffer.slice(0, MAX_LOG);
+
     document.getElementById("log").innerHTML =
-        logBuffer.join("<br>");
+        [...logBuffer].reverse().join("<br>");
 }
 
 function sendCmd(cmd, val = null) {
