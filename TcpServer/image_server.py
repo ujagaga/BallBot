@@ -3,7 +3,7 @@
 import threading
 import cv2
 import time
-from flask import Flask, Response, request, jsonify, render_template, flash, stream_with_context
+from flask import Flask, Response, request, jsonify, render_template, flash
 import config
 import logging
 from logging.handlers import RotatingFileHandler
@@ -11,6 +11,7 @@ import argparse
 import os
 import tcp_server
 import json
+from ball_tracker import detect_ball
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'firmware')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -85,7 +86,13 @@ def generate():
     while True:
         with tcp_server.lock:
             if tcp_server.latest_frame is not None:
-                _, jpeg = cv2.imencode('.jpg', tcp_server.latest_frame)
+                frame = tcp_server.latest_frame.copy()  # copy so we don't modify the original
+
+                # --- detect ball and draw circle ---
+                frame, _ = detect_ball(frame)
+
+                # Encode for MJPEG stream
+                _, jpeg = cv2.imencode('.jpg', frame)
                 frame_bytes = jpeg.tobytes()
             else:
                 continue
