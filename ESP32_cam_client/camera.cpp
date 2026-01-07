@@ -1,6 +1,8 @@
 #include "camera.h"
 
-bool CAM_Init(){
+static bool camInitialized = false;
+
+void CAM_Init(){
   // Camera config
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -29,7 +31,7 @@ bool CAM_Init(){
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
-  return (esp_camera_init(&config) == ESP_OK);
+  camInitialized = (esp_camera_init(&config) == ESP_OK);
 }
 
 camera_fb_t* CAM_Capture() {
@@ -39,3 +41,7 @@ camera_fb_t* CAM_Capture() {
 void CAM_Dispose(camera_fb_t* fb){
   esp_camera_fb_return(fb);
 } 
+
+bool CAM_isInitialized(){
+  return camInitialized;
+}

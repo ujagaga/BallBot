@@ -1,5 +1,4 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include <esp_camera.h>
 
@@ -21,9 +20,7 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-bool CAM_Init(void);
-camera_fb_t* CAM_Capture(void);
-void CAM_Dispose(camera_fb_t* fb);
-
-
-#endif
+extern void CAM_Init(void);
+extern camera_fb_t* CAM_Capture(void);
+extern void CAM_Dispose(camera_fb_t* fb);
+extern bool CAM_isInitialized(void);

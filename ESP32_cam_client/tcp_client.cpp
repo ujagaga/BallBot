@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include <Update.h>
-#include "config.h"
 #include "camera.h"
 #include "motor.h"
+#include "tcp_client.h"
 
 static WiFiClient client;
 static bool streamingFlag = false;
@@ -10,23 +10,29 @@ static uint32_t lastTcpConnectAttemptTime = 0;
 static String cmd_buffer = "";
 static uint32_t lastCaptureTime = 0;
 
-
 static bool maintain_connection(){
   if (client.connected()){
     return true;
   }
 
   if((millis() - lastTcpConnectAttemptTime) > 1000){
-    Serial.printf("No connection to %s:%d, reconnecting...\n", TCP_SERVER_URL, TCP_SERVER_PORT);
     lastTcpConnectAttemptTime = millis();
     if (!client.connect(TCP_SERVER_URL, TCP_SERVER_PORT)) {
-      Serial.println("Failed");
       return false;
     }
-    Serial.println("Connected");
   }
   
   return true;
+}
+
+void TCPC_Debug(String message){
+  if(message.length() > 1){
+    uint32_t len = message.length();
+    uint8_t type = 2;  // text 
+    client.write(&type, 1);
+    client.write((uint8_t*)&len, 4);
+    client.write((const uint8_t*)message.c_str(), len);
+  }
 }
 
 void TCPC_Process(){
@@ -45,18 +51,14 @@ void TCPC_Process(){
       if (cmd_buffer.equalsIgnoreCase("start")) {
         streamingFlag = true;
         esp32_response = "OK start";
-        Serial.println("Streaming started");
       } else if (cmd_buffer.equalsIgnoreCase("stop")) {
         streamingFlag = false;
         esp32_response = "OK stop";
-        Serial.println("Streaming stopped");
       }else if (cmd_buffer.startsWith("fwupdate:")) {
         streamingFlag = false;
         uint32_t fwSize = cmd_buffer.substring(9).toInt();
-        Serial.printf("Starting firmware update, size=%u bytes\n", fwSize);
 
         if (!Update.begin(fwSize)) {
-          Serial.println("Update.begin failed!");
           client.write((const uint8_t*)"ERR begin\n", 10);
           return;
         } else {
@@ -87,7 +89,6 @@ void TCPC_Process(){
         }
       }else{
         esp32_response = "Unknown command";
-        Serial.println("Unknown command");
       }
 
       if(esp32_response.length() > 1){
@@ -116,8 +117,6 @@ void TCPC_Process(){
       client.write((uint8_t*)&len, sizeof(len));
       client.write(fb->buf, fb->len);
       CAM_Dispose(fb);
-    }else{
-      Serial.println("Camera capture failed");
     }
   }
   

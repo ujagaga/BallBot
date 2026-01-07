@@ -1,4 +1,5 @@
-#include "config.h"
+#include <Arduino.h>
+#include "distance.h"
 /* HC-SR04 ultrasound module distance mesuring functions */
 
 void DISTANCE_init()
