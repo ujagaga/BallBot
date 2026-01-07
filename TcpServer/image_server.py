@@ -10,6 +10,7 @@ from logging.handlers import RotatingFileHandler
 import argparse
 import os
 import tcp_server
+import json
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'firmware')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
