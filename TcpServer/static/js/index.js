@@ -9,11 +9,6 @@ function now() {
     return new Date().toLocaleTimeString();
 }
 
-function setStatus(text) {
-    document.getElementById("status").innerText =
-        `Status [${now()}]: ${text}`;
-}
-
 function addLog(text) {
     logBuffer.unshift(`[${now()}] ${text}`);
     logBuffer = logBuffer.slice(0, MAX_LOG);
@@ -32,17 +27,14 @@ function sendCmd(cmd, val = null) {
         .then(r => r.json())
         .then(data => {
             if (data.status === "ok") {
-                setStatus("OK");
                 if (data.response) {
                     addLog(data.response);
                 }
             } else {
-                setStatus("ERROR");
                 addLog(data.message);
             }
         })
         .catch(err => {
-            setStatus("ERROR");
             addLog(err.toString());
         });
 }
