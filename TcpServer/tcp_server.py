@@ -98,7 +98,7 @@ def handle_client(conn, addr):
 
             elif msg_type == 2:  # debug
                 message = payload.decode("utf-8", errors="ignore")
-                logger.info(f"DBG: {message}")
+                logger.debug(f"{message}")
 
             else:
                 logger.warning(f"Unknown msg_type: {msg_type}")
