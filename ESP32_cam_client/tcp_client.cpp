@@ -1,9 +1,9 @@
 #include <WiFi.h>
 #include <ArduinoJson.h>
-
 #include "camera.h"
 #include "tcp_client.h"
 #include "motor.h"
+#include "wifi_connection.h"
 
 // ---------------- CONFIG ----------------
 static constexpr size_t JSON_BUF = 256;
@@ -15,16 +15,29 @@ static bool streamingFlag = true;
 static uint32_t lastCaptureTime = 0;
 static uint32_t lastHeartbeat = 0;
 static String cmd_buffer = "";
+static uint32_t lastConnectAttemptTime = 0;
+
 
 // ---------------- TCP PROCESS ----------------
 void TCPC_Process() {
+    // --- 0. Make sure wifi is available ---
+    if(!WIFIC_connected()){
+        lastConnectAttemptTime = 0;
+        return;
+    }
+    if(lastConnectAttemptTime == 0){
+        lastConnectAttemptTime = millis();
+        return;
+    }
+    if((millis() - lastConnectAttemptTime) < 200){
+        return;
+    }
 
     // --- 1. Maintain TCP connection ---
     if (!client.connected()) {
         if (client) client.stop();
 
         if (!client.connect(TCP_SERVER_URL, TCP_SERVER_PORT)) {
-            delay(500);
             return;
         }
 

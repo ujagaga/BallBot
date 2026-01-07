@@ -4,7 +4,7 @@
 #define TCP_SERVER_PORT         9010
 
 // Capture and send an image every few ms
-#define STREAM_RATE_MS          200
+#define STREAM_RATE_MS          300
 #define RESPONSE_IMG            0
 #define RESPONSE_TXT            1
 #define RESPONSE_DBG            2
