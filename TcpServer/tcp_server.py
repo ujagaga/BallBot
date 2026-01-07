@@ -18,7 +18,7 @@ text_timestamp = None
 esp_client = None
 lock = threading.Lock()
 
-logger = logging.getLogger()
+logger = logging.getLogger("TCP")
 
 
 def recv_all(conn, length):
