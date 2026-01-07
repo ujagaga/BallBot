@@ -5,4 +5,4 @@ cd $SCRIPT_DIR
 
 source .venv/bin/activate
 
-python3 image_server.py --mode=production
+python3 image_server.py
