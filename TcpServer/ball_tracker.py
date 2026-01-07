@@ -1,52 +1,100 @@
-# ball_tracker.py
 import cv2
 import numpy as np
 
-# --- HSV color range for the ball (tweak for your ball color) ---
-# Example: a standard orange ping-pong ball
-LOWER_COLOR = np.array([31, 57, 48])    # lower HSV bound
-UPPER_COLOR = np.array([179, 255, 255])   # upper HSV bound
+class BallTracker:
+    def __init__(self):
+        # --- HSV range for white / light ball ---
+        # Adjust if needed
+        self.lower_hsv = np.array([0, 0, 180])
+        self.upper_hsv = np.array([180, 60, 255])
 
-# Minimum radius to consider a detection
-MIN_RADIUS = 5
+        # --- Detection parameters ---
+        self.min_area = 300
+        self.min_circularity = 0.65
+        self.min_radius = 6
+        self.max_radius = 120
 
-def detect_ball(frame):
-    """
-    Detect a ball in the frame and return the frame with a circle drawn.
-    Returns:
-        frame_out: frame with ball highlighted (if found)
-        ball_coords: (x, y, radius) of detected ball or None if not found
-    """
-    if frame is None:
-        return None, None
+        # --- Motion filtering ---
+        self.last_center = None
+        self.min_motion_px = 2
 
-    # Blur to reduce noise
-    blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+    def process(self, frame):
+        """
+        Input: BGR frame
+        Output: (frame_with_overlay, detection_dict or None)
+        """
 
-    # Convert to HSV
-    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Mask for the ball color
-    mask = cv2.inRange(hsv, LOWER_COLOR, UPPER_COLOR)
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
+        mask = cv2.inRange(hsv, self.lower_hsv, self.upper_hsv)
 
-    # Find contours
-    contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Clean mask
+        kernel = np.ones((5, 5), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-    ball_coords = None
+        contours, _ = cv2.findContours(
+            mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
 
-    if contours:
-        # Find largest contour (assume ball)
-        c = max(contours, key=cv2.contourArea)
-        ((x, y), radius) = cv2.minEnclosingCircle(c)
+        H, W = frame.shape[:2]
 
-        if radius >= MIN_RADIUS:
-            # Draw circle
-            cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 0), 2)
-            ball_coords = (int(x), int(y), int(radius))
-            print("+")
-    else:
-        print("-")
+        best = None
+        best_score = 0
 
-    return frame, ball_coords
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area < self.min_area:
+                continue
+
+            perimeter = cv2.arcLength(c, True)
+            if perimeter == 0:
+                continue
+
+            circularity = 4 * np.pi * area / (perimeter * perimeter)
+            if circularity < self.min_circularity:
+                continue
+
+            (x, y), radius = cv2.minEnclosingCircle(c)
+            if radius < self.min_radius or radius > self.max_radius:
+                continue
+
+            # Reject contours touching frame edges (walls)
+            bx, by, bw, bh = cv2.boundingRect(c)
+            if bx <= 2 or by <= 2 or bx + bw >= W - 2 or by + bh >= H - 2:
+                continue
+
+            score = circularity * area
+            if score > best_score:
+                best_score = score
+                best = (int(x), int(y), int(radius))
+
+        detection = None
+
+        if best:
+            cx, cy, r = best
+
+            # --- Motion gating ---
+            if self.last_center:
+                dx = cx - self.last_center[0]
+                dy = cy - self.last_center[1]
+                dist = np.sqrt(dx * dx + dy * dy)
+                if dist < self.min_motion_px:
+                    best = None
+
+            self.last_center = (cx, cy)
+
+        if best:
+            cx, cy, r = best
+
+            # Draw overlay
+            cv2.circle(frame, (cx, cy), r, (0, 255, 0), 2)
+            cv2.circle(frame, (cx, cy), 3, (0, 0, 255), -1)
+
+            detection = {
+                "x": cx,
+                "y": cy,
+                "radius": r
+            }
+
+        return frame, detection
