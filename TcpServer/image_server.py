@@ -42,7 +42,7 @@ def setup_logger():
         logger_obj.handlers.clear()
 
     formatter = logging.Formatter(
-        "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
+        "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
         datefmt='%Y-%m-%dT%H:%M:%S'
     )
 
