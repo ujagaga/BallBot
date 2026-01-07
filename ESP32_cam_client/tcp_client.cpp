@@ -25,14 +25,17 @@ static bool maintain_connection(){
   return true;
 }
 
-void TCPC_Debug(String message){
-  if(message.length() > 1){
+bool TCPC_Debug(String message){  
+  if(client.connected() && (message.length() > 1)){
     uint32_t len = message.length();
     uint8_t type = 2;  // text 
     client.write(&type, 1);
     client.write((uint8_t*)&len, 4);
     client.write((const uint8_t*)message.c_str(), len);
+    return true;
   }
+
+  return false;
 }
 
 void TCPC_Process(){

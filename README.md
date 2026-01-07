@@ -32,9 +32,11 @@ The robot will connect to a wifi hotspot and then to the TCP server. As I am usi
 
 1. Unblock the wifi by setting up the wifi country `sudo raspi-config`→ Localisation Options → WLAN Country ...
 
-2. Configure wifi AP and make it persistent
+2. Configure wifi AP, ensure IP address and make it persistent
 ```
 sudo nmcli device wifi hotspot ifname wlan0 ssid BallBot password BallBot123
+sudo nmcli connection modify Hotspot ipv4.addresses 10.42.0.1/24
+sudo nmcli connection modify Hotspot ipv4.method shared
 sudo nmcli connection modify Hotspot connection.autoconnect yes
 nmcli device status
 ```

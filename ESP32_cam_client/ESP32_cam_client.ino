@@ -5,15 +5,24 @@
 #include "motor.h"
 #include "distance.h"
 
+static bool connected = false;
 
 void setup() {     
   CAM_Init();   
   WIFIC_init();  
-  MOTOR_init();
-  DISTANCE_init();
+  // MOTOR_init();
+  // DISTANCE_init();
 }
 
 void loop() {  
   TCPC_Process();  
-  MOTOR_process();
+  // MOTOR_process();
+
+  if(!connected){
+    if( WIFIC_connected()){
+      if(TCPC_Debug("Connection established...")){
+        connected = true;
+      }
+    }
+  }
 }

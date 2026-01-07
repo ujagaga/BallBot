@@ -30,46 +30,66 @@ def recv_all(conn, length):
     return buf
 
 def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
+    """
+    TCP server for ESP32 CAM.
+    Handles one client at a time and allows instant reconnection.
+    """
     global latest_frame, frame_timestamp, esp_client, latest_text, text_timestamp, frame_count
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
     s.listen(1)
-    logger.debug(f"TCP server listening on {host}:{port}")
+    logger.info(f"TCP server listening on {host}:{port}")
 
     while True:
-        logger.debug("Waiting for ESP32 connection...")
         try:
+            logger.debug("Waiting for ESP32 connection...")
             conn, addr = s.accept()
-            esp_client = conn
-            logger.info(f"Connected by {addr}")
-            conn.settimeout(3.0)  # helps detect abrupt disconnects
+            logger.info(f"Incoming connection from {addr}")
+
+            # === Close previous client immediately ===
+            with lock:
+                if esp_client:
+                    try:
+                        logger.info("Closing previous ESP32 connection")
+                        esp_client.shutdown(socket.SHUT_RDWR)
+                    except Exception:
+                        pass
+                    esp_client.close()
+                    esp_client = None
+
+                esp_client = conn
+
+            conn.settimeout(3.0)  # Detect dead client quickly
+
+            logger.info(f"ESP32 connected: {addr}")
 
             while True:
                 try:
-                    # === Read 1 byte: message type ===
-                    msg_type = conn.recv(1)
-                    if not msg_type:
-                        logger.debug("Client disconnected")
+                    # --- 1 byte: message type ---
+                    msg_type_bytes = conn.recv(1)
+                    if not msg_type_bytes:
+                        logger.info("Client disconnected (msg_type)")
                         break
-                    msg_type = msg_type[0]
+                    msg_type = msg_type_bytes[0]
 
-                    # === Read 4 bytes: payload length ===
+                    # --- 4 bytes: payload length ---
                     length_bytes = recv_all(conn, 4)
                     if not length_bytes:
-                        logger.debug("Client disconnected (length)")
+                        logger.info("Client disconnected (length)")
                         break
                     payload_len = struct.unpack("I", length_bytes)[0]
 
-                    # === Read payload ===
+                    # --- Read payload ---
                     payload = recv_all(conn, payload_len)
                     if payload is None:
-                        logger.debug("Client disconnected (payload)")
+                        logger.info("Client disconnected (payload)")
                         break
 
+                    # --- Process messages ---
                     if msg_type == 0:
-                        # --- Image frame ---
+                        # Image frame
                         npbuf = np.frombuffer(payload, dtype=np.uint8)
                         frame = cv2.imdecode(npbuf, cv2.IMREAD_COLOR)
                         if frame is not None:
@@ -82,31 +102,34 @@ def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
                         else:
                             logger.warning("Failed to decode frame")
                     elif msg_type == 1:
-                        # --- Text message ---
+                        # Text message
                         message = payload.decode("utf-8", errors="ignore")
-                        # logger.info(f"Received text: {message}")
                         with lock:
                             latest_text = message
                             text_timestamp = time.time()
                     elif msg_type == 2:
-                        # --- Debug message ---
+                        # Debug
                         message = payload.decode("utf-8", errors="ignore")
                         logger.info(f"DBG: {message}")
                     else:
                         logger.warning(f"Unknown msg_type: {msg_type}")
 
                 except socket.timeout:
-                    continue
+                    continue  # allows next iteration to check for disconnect
                 except Exception as e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    logger.exception(f"TCP error at line {exc_tb.tb_lineno}: {e}")
+                    logger.exception(f"Error while receiving data: {e}")
                     break
 
         except Exception as exc:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            logger.exception(f"Error at line {exc_tb.tb_lineno}: {exc}")
+            logger.exception(f"Server error: {exc}")
         finally:
-            if esp_client:
-                esp_client.close()
-            esp_client = None
-            logger.debug("ESP32 disconnected, waiting for new connection...")
+            # Cleanup connection
+            with lock:
+                if esp_client:
+                    try:
+                        esp_client.shutdown(socket.SHUT_RDWR)
+                    except Exception:
+                        pass
+                    esp_client.close()
+                    esp_client = None
+            logger.info("ESP32 disconnected, ready for new connection")

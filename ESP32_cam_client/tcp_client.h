@@ -1,6 +1,6 @@
 #pragma once
 
-#define TCP_SERVER_URL          "192.168.0.200"
+#define TCP_SERVER_URL          "10.42.0.1"
 #define TCP_SERVER_PORT         9010
 
 // Capture and send an image every few ms
@@ -11,4 +11,4 @@
 
 
 extern void TCPC_Process(void);
-extern void TCPC_Debug(String message);
+extern bool TCPC_Debug(String message);
