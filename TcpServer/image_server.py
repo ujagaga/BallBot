@@ -31,7 +31,7 @@ app.config.update(
 )
 
 def setup_logger():
-    logger_obj = logging.getLogger("img")
+    logger_obj = logging.getLogger()
     # 👇 Set log level based on mode
     if execution_mode == "development":
         logger_obj.setLevel(logging.DEBUG)   # Show everything
