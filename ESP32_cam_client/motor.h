@@ -7,6 +7,10 @@
 #define BLDC_DIR_PIN    (2)
 #define BLDC_BRAKE_PIN  (4)
 
+#define SERVO_1_SPEED   (1)
+#define SERVO_2_SPEED   (1)
+#define SERVO_3_SPEED   (1)
+
 #define MOTOR_CMD_TIMEOUT (1000)
 
 extern void MOTOR_init(void);

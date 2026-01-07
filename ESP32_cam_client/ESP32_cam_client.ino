@@ -8,11 +8,11 @@
 
 static bool connected = false;
 
-void setup() {     
-  CAM_Init();   
+void setup() { 
   WIFIC_init();  
   MOTOR_init();
-  DISTANCE_init();
+  DISTANCE_init();  
+  CAM_Init(); 
 }
 
 void loop() {  

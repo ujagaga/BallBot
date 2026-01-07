@@ -42,7 +42,11 @@ void TCPC_Process() {
         }
 
         streamingFlag = true;
-        TCPC_Debug("Connection established");
+        if(CAM_isInitialized()){
+            TCPC_Debug("Camera initialized");
+        }else{
+            TCPC_Debug("Camera failure");
+        }
     }
 
     // --- 2. Read JSON commands ---
