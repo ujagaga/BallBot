@@ -5,7 +5,7 @@ class BallTracker:
     def __init__(self):
         # --- HSV range for white / light ball ---
         # Adjust if needed
-        self.lower_hsv = np.array([31, 57, 48])
+        self.lower_hsv = np.array([27, 21, 65])
         self.upper_hsv = np.array([180, 255, 255])
 
         # --- Detection parameters ---
