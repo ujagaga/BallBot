@@ -56,7 +56,9 @@ cd BallBot/TcpServer
 4. Open your web browser and navigate to the servers IP address at port 9000.
 
 ## Status
-
-Just starting the project, so it is not yet usable. For now, I believe the schematic and the 3D model are finished.
+- The schematic and the 3D model are finished.
+- The ESP32 CAM code is done and working
+- The TCP and Flask servers are ready and working
+- TODO: solder everything, put it together, test it and start developping the automation code.
 
 ![3D Preview](Screenshot.png)
