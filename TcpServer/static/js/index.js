@@ -1,3 +1,6 @@
+const statusLog = [];
+const maxStatusMessages = 5;
+
 function getVal(id) {
     return document.getElementById(id).value;
 }
@@ -5,10 +8,21 @@ function getVal(id) {
 function setStatus(text) {
     // Get current time
     const now = new Date();
-    const timestamp = now.toLocaleTimeString(); // HH:MM:SS format
+    const timestamp = now.toLocaleTimeString(); // HH:MM:SS
 
-    // Update status div
-    document.getElementById("status").innerText = `[${timestamp}] Status: ${text}`;
+    // Build the message
+    const msg = `[${timestamp}] ${text}`;
+
+    // Add to log
+    statusLog.push(msg);
+
+    // Keep only last maxStatusMessages entries
+    if (statusLog.length > maxStatusMessages) {
+        statusLog.shift(); // remove oldest
+    }
+
+    // Display log
+    document.getElementById("status").innerText = statusLog.join("\n");
 }
 
 
