@@ -5,7 +5,7 @@
 #define SERVO_3_PIN     (15)
 #define BLDC_SPEED_PIN  (12)
 #define BLDC_DIR_PIN    (2)
-#define BLDC_BRAKE_PIN  (4)
+
 
 #define SERVO_1_SPEED   (1)
 #define SERVO_2_SPEED   (1)
@@ -15,7 +15,6 @@
 
 extern void MOTOR_init(void);
 extern void MOTOR_setServo(int id, int angle);
-extern void MOTOR_stop(void);
 extern void MOTOR_move(int speed);
 extern void MOTOR_process(void);
 extern void MOTOR_setCmdTimeout(uint8_t timeout);

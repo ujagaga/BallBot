@@ -82,15 +82,23 @@ void TCPC_Process() {
                         }
                     }
 
+                    // -------- LED LIGHT --------
+                    else if (!strcmp(cmd, "light")) {
+
+                        if (doc.containsKey("value")) {
+                            CAM_light(doc["value"]);
+                        } 
+                        else {
+                            response = "ERR light param";
+                        }
+                    }
+
                     // -------- MOTOR --------
                     else if (!strcmp(cmd, "motor")) {
 
                         if (doc.containsKey("speed")) {
                             MOTOR_move(doc["speed"]);
-                        }
-                        else if (doc.containsKey("stop")) {
-                            MOTOR_stop();
-                        }
+                        }                        
                         else if (doc.containsKey("timeout")) {
                             MOTOR_setCmdTimeout(doc["timeout"]);
                         }
@@ -115,7 +123,7 @@ void TCPC_Process() {
                         else {
                             response = "ERR servo param";
                         }
-                    }
+                    }                    
 
                     else {
                         response = "ERR unknown cmd";

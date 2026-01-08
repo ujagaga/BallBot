@@ -31,23 +31,14 @@ void MOTOR_init() {
 
     pinMode(BLDC_SPEED_PIN, OUTPUT);
     pinMode(BLDC_DIR_PIN, OUTPUT);
-    pinMode(BLDC_BRAKE_PIN, OUTPUT);
     digitalWrite(BLDC_SPEED_PIN, LOW);
     digitalWrite(BLDC_DIR_PIN, LOW);
-    digitalWrite(BLDC_BRAKE_PIN, LOW);
 }
 
 // --- Set servo target ---
 void MOTOR_setServo(int id, int angle) {
     if (id < 0 || id > 2) return;
     servoTargetAngle[id] = angle;
-}
-
-// --- Stop BLDC ---
-void MOTOR_stop(){
-    analogWrite(BLDC_SPEED_PIN, 0);
-    digitalWrite(BLDC_BRAKE_PIN, HIGH);
-    cmdTime = millis();
 }
 
 // --- Move BLDC ---
@@ -69,7 +60,6 @@ void MOTOR_process(){
     // --- BLDC motor timeout ---
     if ((now - cmdTime) > cmdTimeout) {
         analogWrite(BLDC_SPEED_PIN, 0);
-        digitalWrite(BLDC_BRAKE_PIN, LOW);
     }
 
     // --- Servo smooth update every SERVO_UPDATE_MS ---

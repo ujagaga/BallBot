@@ -24,17 +24,20 @@
             <button onclick="sendCmd('start')">Start</button>
             <button onclick="sendCmd('stop')">Stop</button>
         </div>
-
+        <div class="section">
+            <h3>Wheel Timeout (ms):</h3>
+            <input type="number" id="timeout" value="255">
+            <button onclick="sendCmd('timeout', getVal('timeout'))">Set</button>
+        </div>
         <div class="section">
             <h3>Wheel Speed:</h3>
             <input type="number" id="speed" value="600">
             <button onclick="sendCmd('speed', getVal('speed'))">Set Speed</button>
-            <button onclick="sendCmd('motor_stop')">Stop Motor</button>
         </div>
         <div class="section">
-            <h3>Timeout (ms):</h3>
-            <input type="number" id="timeout" value="255">
-            <button onclick="sendCmd('timeout', getVal('timeout'))">Set Timeout</button>
+            <h3>Light:</h3>
+            <input type="number" id="light" value="600">
+            <button onclick="sendCmd('light', getVal('light'))">Set LED</button>
         </div>
         <div class="section">
             <h3>Servo 1:</h3>

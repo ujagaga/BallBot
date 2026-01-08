@@ -205,9 +205,6 @@ def api_control():
     elif cmd == "speed":
         payload = {"cmd": "motor", "speed": int(value)}
 
-    elif cmd == "motor_stop":
-        payload = {"cmd": "motor", "stop": True}
-
     elif cmd == "timeout":
         payload = {"cmd": "motor", "timeout": int(value)}
 
@@ -221,12 +218,9 @@ def api_control():
     elif cmd == "motor3":
         payload = {"cmd": "servo", "id": 2, "angle": int(value)}
 
-    # ---------- UNSUPPORTED / REMOVED ----------
-    elif cmd in ("forward", "reverse", "go", "dist", "img_time"):
-        return jsonify({
-            "status": "error",
-            "message": f"Command '{cmd}' not implemented in JSON protocol"
-        }), 400
+    # ---------- LIGHT ----------
+    elif cmd == "light":
+        payload = {"cmd": "light", "value": int(value)}
 
     else:
         return jsonify({
