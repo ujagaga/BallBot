@@ -18,35 +18,35 @@
     <!-- Controls -->
     <div class="controls">
 
-        <div class="section streaming">
-            <h3>Streaming</h3>
+        <div class="section">
+            <h3>Streaming:</h3>
             <button onclick="sendCmd('start')">Start</button>
             <button onclick="sendCmd('stop')">Stop</button>
         </div>
 
         <div class="section">
-            <h3>Wheel Motor</h3>
-            Speed:
+            <h3>Wheel Speed:</h3>
             <input type="number" id="speed" value="600">
             <button onclick="sendCmd('speed', getVal('speed'))">Set Speed</button>
             <button onclick="sendCmd('motor_stop')">Stop Motor</button>
-            <br><br>
-            Timeout (ms):
+        </div>
+        <div class="section">
+            <h3>Timeout (ms):</h3>
             <input type="number" id="timeout" value="255">
             <button onclick="sendCmd('timeout', getVal('timeout'))">Set Timeout</button>
         </div>
-
         <div class="section">
-            <h3>Servo Motors</h3>
-            Servo 1:
+            <h3>Servo 1:</h3>
             <input type="number" id="m1" value="90">
             <button onclick="sendCmd('motor1', getVal('m1'))">Set</button><br>
-
-            Servo 2:
+        </div>
+        <div class="section">
+            <h3>Servo 2:</h3>
             <input type="number" id="m2" value="90">
             <button onclick="sendCmd('motor2', getVal('m2'))">Set</button><br>
-
-            Servo 3:
+        </div>
+        <div class="section">
+            <h3>Servo 3:</h3>
             <input type="number" id="m3" value="90">
             <button onclick="sendCmd('motor3', getVal('m3'))">Set</button>
         </div>
