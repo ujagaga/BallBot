@@ -70,7 +70,7 @@ input {
         width: 100%;
     }
     .controls {
-        width: calc(100% - 40px);
+        width: calc(100% - 30px);
     }
 
     button {
