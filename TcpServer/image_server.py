@@ -247,10 +247,51 @@ def api_control():
     }), 200
 
 
-
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/next_frame")
+def next_frame():
+    """
+    Block until the next frame is received from ESP32,
+    then return it as a single JPEG response.
+    """
+    timeout = config.RESPONSE_TIMEOUT  # seconds
+
+    with tcp_server.frame_condition:
+        start_count = tcp_server.frame_count
+        start_time = time.time()
+
+        while tcp_server.frame_count == start_count:
+            remaining = timeout - (time.time() - start_time)
+            if remaining <= 0:
+                return jsonify({
+                    "status": "timeout",
+                    "message": "No new frame received"
+                }), 504
+
+            tcp_server.frame_condition.wait(timeout=remaining)
+
+        frame = tcp_server.latest_frame.copy()
+
+    ok, jpeg = cv2.imencode(".jpg", frame)
+    if not ok:
+        return jsonify({
+            "status": "error",
+            "message": "Failed to encode frame"
+        }), 500
+
+    return Response(
+        jpeg.tobytes(),
+        mimetype="image/jpeg",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Frame-Count": str(tcp_server.frame_count)
+        }
+    )
+
 
 
 if __name__ == "__main__":

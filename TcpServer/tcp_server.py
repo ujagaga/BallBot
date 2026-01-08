@@ -17,6 +17,7 @@ latest_text = None
 text_timestamp = None
 esp_client = None
 lock = threading.Lock()
+frame_condition = threading.Condition(lock)
 
 logger = logging.getLogger("TCP")
 
@@ -39,13 +40,14 @@ def recv_all(conn, length):
 
 def handle_client(conn, addr):
     """Handle a single ESP32 client in its own thread"""
-    global latest_frame, frame_timestamp, frame_count, latest_text, text_timestamp, esp_client
+    global latest_frame, frame_timestamp, frame_count
+    global latest_text, text_timestamp, esp_client
 
     logger.info(f"ESP32 connected: {addr}")
     conn.settimeout(3.0)
 
+    # Register this client as the active ESP32
     with lock:
-        # Close previous client if exists
         if esp_client and esp_client != conn:
             try:
                 esp_client.shutdown(socket.SHUT_RDWR)
@@ -56,67 +58,82 @@ def handle_client(conn, addr):
 
     try:
         while True:
-            # 1 byte: message type
+            # ---- Read message type (1 byte) ----
             msg_type_bytes = conn.recv(1)
             if not msg_type_bytes:
                 logger.info("Client disconnected (msg_type)")
                 break
+
             msg_type = msg_type_bytes[0]
 
-            # 4 bytes: payload length
+            # ---- Read payload length (4 bytes) ----
             length_bytes = recv_all(conn, 4)
             if not length_bytes:
                 logger.info("Client disconnected (length)")
                 break
+
             payload_len = struct.unpack("I", length_bytes)[0]
 
-            # payload
+            # ---- Read payload ----
             payload = recv_all(conn, payload_len)
             if payload is None:
                 logger.info("Client disconnected (payload)")
                 break
 
-            # --- process messages ---
-            if msg_type == 0:  # image frame
+            # ---- Process message ----
+            if msg_type == 0:  # Image frame
                 npbuf = np.frombuffer(payload, dtype=np.uint8)
                 frame = cv2.imdecode(npbuf, cv2.IMREAD_COLOR)
+
                 if frame is not None:
-                    with lock:
+                    with frame_condition:
                         latest_frame = frame
                         frame_timestamp = time.time()
                         frame_count += 1
-                        if frame_count > 1000:
+
+                        # prevent overflow
+                        if frame_count > 1_000_000_000:
                             frame_count = 0
+
+                        frame_condition.notify_all()
                 else:
                     logger.warning("Failed to decode frame")
 
-            elif msg_type == 1:  # text message
+            elif msg_type == 1:  # Text message
                 message = payload.decode("utf-8", errors="ignore")
                 with lock:
                     latest_text = message
                     text_timestamp = time.time()
 
-            elif msg_type == 2:  # debug
+            elif msg_type == 2:  # Debug message
                 message = payload.decode("utf-8", errors="ignore")
-                logger.debug(f"{message}")
+                logger.debug(message)
 
             else:
                 logger.warning(f"Unknown msg_type: {msg_type}")
 
+    except socket.timeout:
+        logger.warning("Client socket timeout")
+
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        logger.exception(f"Client error at line {exc_tb.tb_lineno}: {e}")
+        logger.exception(
+            f"Client error at line {exc_tb.tb_lineno}: {e}"
+        )
 
     finally:
         with lock:
             if esp_client == conn:
                 esp_client = None
+
         try:
             conn.shutdown(socket.SHUT_RDWR)
         except Exception:
             pass
+
         conn.close()
         logger.info(f"ESP32 disconnected: {addr}")
+
 
 
 def start_server(host="0.0.0.0", port=config.TCP_SERVER_PORT):
