@@ -24,7 +24,7 @@ execution_mode = args.mode
 
 # Flask server
 app = Flask(__name__)
-app.config["SECRET_KEY"] = config.FLASK_APP_SECRET_KEY
+app.config["SECRET_KEY"] = "9OLWxND4K4_any_random_string123123"
 app.config.update(
     SESSION_COOKIE_SECURE=False,
     SESSION_COOKIE_HTTPONLY=True,

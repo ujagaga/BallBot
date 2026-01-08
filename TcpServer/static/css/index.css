@@ -3,7 +3,7 @@ body {
     background: #111;
     color: #eee;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
 }
 
 h1 {
@@ -64,13 +64,13 @@ input {
     .container {
         flex-direction: column;
     }
-
     .video {
+        min-width: 100%;
+        max-width: 100%;
         width: 100%;
     }
-
     .controls {
-        width: 100%;
+        width: calc(100% - 20px);
     }
 
     button {
