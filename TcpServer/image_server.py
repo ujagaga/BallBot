@@ -52,15 +52,6 @@ def setup_logger():
         console_handler.setLevel(logging.DEBUG)  # Ensure handler shows debug
         console_handler.setFormatter(formatter)
         logger_obj.addHandler(console_handler)
-    else:
-        file_handler = RotatingFileHandler(
-            os.path.join(os.path.dirname(__file__), 'app.log'),
-            maxBytes=65535,
-            backupCount=1
-        )
-        file_handler.setLevel(logging.INFO)  # Only log info and above
-        file_handler.setFormatter(formatter)
-        logger_obj.addHandler(file_handler)
 
     return logger_obj
 
