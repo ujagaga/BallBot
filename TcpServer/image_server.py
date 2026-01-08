@@ -11,7 +11,6 @@ import argparse
 import os
 import tcp_server
 import json
-from ball_tracker import detect_ball
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'firmware')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -93,8 +92,6 @@ def generate():
                 frame = None
 
         if frame is not None:
-            frame, _ = detect_ball(frame)
-
             ok, jpeg = cv2.imencode(".jpg", frame)
             if ok:
                 frame_bytes = jpeg.tobytes()
