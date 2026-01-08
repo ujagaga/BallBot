@@ -18,14 +18,14 @@
     <!-- Controls -->
     <div class="controls">
 
-        <div class="section">
+        <div class="section streaming">
             <h3>Streaming</h3>
             <button onclick="sendCmd('start')">Start</button>
             <button onclick="sendCmd('stop')">Stop</button>
         </div>
 
         <div class="section">
-            <h3>Motor</h3>
+            <h3>Wheel Motor</h3>
             Speed:
             <input type="number" id="speed" value="600">
             <button onclick="sendCmd('speed', getVal('speed'))">Set Speed</button>

@@ -87,6 +87,17 @@ input {
     .section h3 {
         margin-bottom: 8px;
     }
+        .section.streaming {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section.streaming h3 {
+        margin: 0;
+        margin-right: 10px;
+        white-space: nowrap;
+    }
 }
 @media (max-width: 480px) {
     button {
