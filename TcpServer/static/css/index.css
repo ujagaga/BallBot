@@ -87,11 +87,6 @@ input {
     .section h3 {
         margin-bottom: 8px;
     }
-
-    .video img {
-        max-height: 40vh;
-        object-fit: contain;
-    }
 }
 @media (max-width: 480px) {
     button {
