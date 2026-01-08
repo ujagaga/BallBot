@@ -5,10 +5,12 @@ body {
     margin: 0;
     padding: 10px;
 }
-.box {
-    border: 1px solid #ccc;
-    padding: 20px;
-    border-radius: 10px;
+code {
+    background: #222;
+    padding: 2px 6px;
+}
+li {
+    margin-bottom: 0.5rem;
 }
 .topnav {
     display: flex;

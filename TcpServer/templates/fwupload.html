@@ -11,9 +11,15 @@
     <link rel="stylesheet" href="static/css/fwupload.css" />
   </head>
   <body>
+  <nav class="topnav">
+    <div class="nav-title">ESP32 Firmware Upload</div>
+    <div class="nav-links">
+        <a href="/">Control</a>
+        <a href="/api">API</a>
+        <a href="/upload_fw" class="disabled">Firmware Upload</a>
+    </div>
+</nav>
     <div class="box">
-      <h1>Upload ESP32 Firmware</h1>
-
       <!-- Upload Form -->
       <form id="uploadForm" method="post" enctype="multipart/form-data">
         <input type="file" name="file" id="fileInput" accept=".bin" required>

@@ -180,8 +180,14 @@ def update_progress():
 
 @app.route('/api')
 def api_control():
-    cmd = request.args.get("cmd", "").lower()
-    value = request.args.get("val", "").lower()
+    cmd = request.args.get("cmd")
+    value = request.args.get("val")
+
+    if cmd is None:
+        return render_template("api.html")
+
+    cmd = cmd.lower()
+    value = (value or "").lower()
 
     if not tcp_server.esp_client:
         return jsonify({"status": "error", "message": "ESP32 not connected"}), 400
