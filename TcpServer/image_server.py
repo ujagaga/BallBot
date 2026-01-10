@@ -184,6 +184,10 @@ def api_control():
     value = request.args.get("val")
     speed = request.args.get("speed")
     keep_dir = request.args.get("keepDir")
+    try:
+        increment_val = int(value)
+    except ValueError:
+        increment_val = 0
 
     if cmd is None:
         return render_template("api.html")
@@ -205,36 +209,29 @@ def api_control():
     # ---------- STREAM ----------
     if cmd == "start":
         payload = {"cmd": "stream", "enable": True}
-
     elif cmd == "stop":
         payload = {"cmd": "stream", "enable": False}
 
     # ---------- MOTOR ----------
     elif cmd == "distance":
-        try:
-            distance_val = int(value)
-        except ValueError:
-            return jsonify({"status": "error", "message": "Invalid distance value"}), 400
-
         speed_val = int(speed) if speed else 600
         keep_dir_val = keep_dir.lower() in ("true", "1", "yes") if keep_dir else True
+        dist_val = int(value) if value else 0
 
         payload = {
             "cmd": "motor",
-            "distance": distance_val,
+            "distance": dist_val,
             "speed": speed_val,
             "keepDir": keep_dir_val
         }
 
-    # ---------- SERVOS ----------
-    elif cmd == "motor1":
-        payload = {"cmd": "servo", "id": 0, "angle": int(value)}
-
-    elif cmd == "motor2":
-        payload = {"cmd": "servo", "id": 1, "angle": int(value)}
-
-    elif cmd == "motor3":
-        payload = {"cmd": "servo", "id": 2, "angle": int(value)}
+    # ---------- SERVO ----------
+    elif cmd == "servoClaw":
+        payload = {"cmd": "servoClawIncrement", "angle": int(increment_val)}
+    elif cmd == "servoArm":
+        payload = {"cmd": "servoArmIncrement",  "angle": int(increment_val)}
+    elif cmd == "servoSteer":
+        payload = {"cmd": "servoSteerIncrement", "angle": int(increment_val)}
 
     # ---------- LIGHT ----------
     elif cmd == "light":
@@ -257,6 +254,7 @@ def api_control():
         "sent": payload,
         "response": esp32_response
     }), 200
+
 
 
 @app.route("/")

@@ -6,8 +6,12 @@
 #include "wifi_connection.h"
 
 // ---------------- CONFIG ----------------
-static constexpr size_t JSON_BUF = 256;
+#define MAX_CMD_LEN        512
+#define IMAGE_CHUNK_SIZE  1024   // Safe chunk size for ESP32 TCP
+
+static constexpr size_t JSON_BUF = 512;
 static constexpr uint32_t HEARTBEAT_MS = 2000;
+static constexpr uint32_t TCP_RETRY_MS = 2000;
 
 // ---------------- STATE -----------------
 static WiFiClient client;
@@ -15,38 +19,52 @@ static bool streamingFlag = true;
 static uint32_t lastCaptureTime = 0;
 static uint32_t lastHeartbeat = 0;
 static String cmd_buffer = "";
-static uint32_t lastConnectAttemptTime = 0;
+static uint32_t lastTcpAttempt = 0;
 
+// ---------------- INTERNAL HELPERS ----------------
+static bool sendBuffer(const uint8_t* data, size_t len) {
+    size_t sent = 0;
+
+    while (sent < len) {
+        size_t avail = client.availableForWrite();
+        if (avail == 0) {
+            return false; // would block → abort
+        }
+
+        size_t chunk = min(avail, min((size_t)IMAGE_CHUNK_SIZE, len - sent));
+        size_t w = client.write(data + sent, chunk);
+        if (w == 0) {
+            return false;
+        }
+        sent += w;
+    }
+    return true;
+}
 
 // ---------------- TCP PROCESS ----------------
 void TCPC_Process() {
-    // --- 0. Make sure wifi is available ---
-    if(!WIFIC_connected()){
-        lastConnectAttemptTime = 0;
-        return;
-    }
-    if(lastConnectAttemptTime == 0){
-        lastConnectAttemptTime = millis();
-        return;
-    }
-    if((millis() - lastConnectAttemptTime) < 200){
+
+    // --- 0. WiFi must be connected ---
+    if (!WIFIC_connected()) {
+        client.stop();
         return;
     }
 
     // --- 1. Maintain TCP connection ---
     if (!client.connected()) {
-        if (client) client.stop();
-
-        if (!client.connect(TCP_SERVER_URL, TCP_SERVER_PORT)) {
+        uint32_t now = millis();
+        if (now - lastTcpAttempt < TCP_RETRY_MS)
             return;
-        }
+
+        lastTcpAttempt = now;
+        client.stop();
+
+        if (!client.connect(TCP_SERVER_URL, TCP_SERVER_PORT))
+            return;
 
         streamingFlag = true;
-        if(CAM_isInitialized()){
-            TCPC_Debug("Camera initialized");
-        }else{
-            TCPC_Debug("Camera failure");
-        }
+
+        TCPC_Debug(CAM_isInitialized() ? "Camera initialized" : "Camera failure");
     }
 
     // --- 2. Read JSON commands ---
@@ -56,76 +74,65 @@ void TCPC_Process() {
         if (c == '\n') {
             cmd_buffer.trim();
 
-            if (cmd_buffer.length() > 0) {
-
+            if (!cmd_buffer.isEmpty()) {
                 StaticJsonDocument<JSON_BUF> doc;
-                DeserializationError err = deserializeJson(doc, cmd_buffer);
-
                 String response = "OK";
 
+                DeserializationError err = deserializeJson(doc, cmd_buffer);
                 if (err) {
                     response = "ERR json";
-                }
-                else {
+                } else if (!doc["cmd"].is<const char*>()) {
+                    response = "ERR cmd type";
+                } else {
                     const char* cmd = doc["cmd"];
 
-                    if (!cmd) {
-                        response = "ERR no cmd";
-                    }
-
                     // -------- STREAM --------
-                    else if (!strcmp(cmd, "stream")) {
-                        if (doc.containsKey("enable")) {
+                    if (!strcmp(cmd, "stream")) {
+                        if (doc.containsKey("enable"))
                             streamingFlag = doc["enable"];
-                        } else {
+                        else
                             response = "ERR stream param";
-                        }
                     }
 
-                    // -------- LED LIGHT --------
+                    // -------- LED --------
                     else if (!strcmp(cmd, "light")) {
-
-                        if (doc.containsKey("value")) {
+                        if (doc.containsKey("value"))
                             CAM_light(doc["value"]);
-                        } 
-                        else {
+                        else
                             response = "ERR light param";
-                        }
                     }
 
                     // -------- MOTOR --------
                     else if (!strcmp(cmd, "motor")) {
-                    
                         if (doc.containsKey("distance")) {
-                            uint32_t dist = (uint32_t) doc["distance"];
-                            int speed = doc.containsKey("speed") ? (int)doc["speed"] : 100;
-                            bool keepDir = doc.containsKey("keepDir") ? (bool)doc["keepDir"] : true;
-
+                            uint32_t dist = doc["distance"];
+                            int speed = doc.containsKey("speed") ? doc["speed"] : 100;
+                            bool keepDir = doc.containsKey("keepDir") ? doc["keepDir"] : true;
                             MOTOR_moveToDistance(dist, speed, keepDir);
-                        }
-                        else {
+                        } else {
                             response = "ERR motor param";
                         }
                     }
 
-                    // -------- SERVO --------
-                    else if (!strcmp(cmd, "servo")) {
-
-                        if (doc.containsKey("id") && doc.containsKey("angle")) {
-                            int id = doc["id"];
-                            int angle = doc["angle"];
-
-                            if (id >= 0 && id <= 2 && angle >= 0 && angle <= 180) {
-                                MOTOR_setServo(id, angle);
-                            } else {
-                                response = "ERR servo range";
-                            }
-                        }
-                        else {
-                            response = "ERR servo param";
-                        }
-                    }                    
-
+                    // -------- SERVOS --------
+                    else if (!strcmp(cmd, "servoClaw")) {
+                        MOTOR_setClawServo(doc["angle"] | 0);
+                    }
+                    else if (!strcmp(cmd, "servoArm")) {
+                        MOTOR_setArmServo(doc["angle"] | 0);
+                    }
+                    else if (!strcmp(cmd, "servoSteer")) {
+                        MOTOR_setSteerServo(doc["angle"] | 0);
+                    }
+                    else if (!strcmp(cmd, "servoClawIncrement")) {
+                        MOTOR_incrementClawServo(doc["angle"] | 0);
+                    }
+                    else if (!strcmp(cmd, "servoArmIncrement")) {
+                        MOTOR_incrementArmServo(doc["angle"] | 0);
+                    }
+                    else if (!strcmp(cmd, "servoSteerIncrement")) {
+                        MOTOR_incrementSteerServo(doc["angle"] | 0);
+                    }
                     else {
                         response = "ERR unknown cmd";
                     }
@@ -133,57 +140,72 @@ void TCPC_Process() {
 
                 // --- Send ACK ---
                 String ack = cmd_buffer + ":" + response;
-                uint8_t type = 1; // text
+                uint8_t type = 1;
                 uint32_t len = ack.length();
 
-                client.write(&type, 1);
-                client.write((uint8_t*)&len, 4);
-                client.write((const uint8_t*)ack.c_str(), len);
+                if (client.availableForWrite() >= (1 + 4 + len)) {
+                    client.write(&type, 1);
+                    client.write((uint8_t*)&len, 4);
+                    client.write((const uint8_t*)ack.c_str(), len);
+                }
             }
 
             cmd_buffer = "";
-        }
-        else {
+        } else {
             cmd_buffer += c;
+            if (cmd_buffer.length() >= MAX_CMD_LEN)
+                cmd_buffer = "";
         }
     }
 
     uint32_t now = millis();
 
-    // --- 3. Heartbeat when stream paused ---
+    // --- 3. Heartbeat ---
     if (!streamingFlag && (now - lastHeartbeat > HEARTBEAT_MS)) {
         lastHeartbeat = now;
         TCPC_Debug("heartbeat");
     }
 
-    // --- 4. Stream frames ---
+    // --- 4. Stream frames (non-blocking, chunked) ---
     if (streamingFlag && (now - lastCaptureTime > STREAM_RATE_MS)) {
         lastCaptureTime = now;
 
         camera_fb_t* fb = CAM_Capture();
-        if (fb) {
-            uint8_t type = 0; // image
-            uint32_t len = fb->len;
+        if (!fb)
+            return;
 
-            client.write(&type, 1);
-            client.write((uint8_t*)&len, sizeof(len));
-            client.write(fb->buf, fb->len);
+        uint8_t type = 0;
+        uint32_t len = fb->len;
+        size_t total = 1 + 4 + len;
 
-            CAM_Dispose(fb);
+        if (client.availableForWrite() < total) {
+            CAM_Dispose(fb); // drop frame
+            return;
         }
+
+        if (!client.write(&type, 1) ||
+            !client.write((uint8_t*)&len, 4) ||
+            !sendBuffer(fb->buf, fb->len)) {
+            client.stop();
+        }
+
+        CAM_Dispose(fb);
     }
 }
 
 // ---------------- DEBUG HELPER ----------------
 bool TCPC_Debug(String msg) {
-    if (client.connected() && msg.length() > 0) {
-        uint8_t type = 2;
-        uint32_t len = msg.length();
+    if (!client.connected() || msg.isEmpty())
+        return false;
 
-        client.write(&type, 1);
-        client.write((uint8_t*)&len, 4);
-        client.write((const uint8_t*)msg.c_str(), len);
-        return true;
-    }
-    return false;
+    uint8_t type = 2;
+    uint32_t len = msg.length();
+
+    if (client.availableForWrite() < (1 + 4 + len))
+        return false;
+
+    client.write(&type, 1);
+    client.write((uint8_t*)&len, 4);
+    client.write((const uint8_t*)msg.c_str(), len);
+    return true;
 }
