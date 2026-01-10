@@ -17,19 +17,29 @@ function addLog(text) {
         [...logBuffer].reverse().join("<br>");
 }
 
-function sendCmd(cmd, val = null) {
+// sendDistance() reads the fields and calls sendCmd
+function sendDistance() {
+    let distance = parseInt(document.getElementById("distance").value);
+    let speed = parseInt(document.getElementById("distance_speed").value);
+    let keepDir = document.getElementById("keepDir").value;
+
+    // Pass extra parameters as object
+    sendCmd("distance", distance, { speed: speed, keepDir: keepDir });
+}
+
+// Modified sendCmd to append extra params
+function sendCmd(cmd, val = null, extra = {}) {
     let url = `/api?cmd=${cmd}`;
-    if (val !== null) {
-        url += `&val=${val}`;
+    if (val !== null) url += `&val=${val}`;
+    for (const key in extra) {
+        url += `&${key}=${extra[key]}`;
     }
 
     fetch(url)
         .then(r => r.json())
         .then(data => {
             if (data.status === "ok") {
-                if (data.response) {
-                    addLog(data.response);
-                }
+                if (data.response) addLog(JSON.stringify(data.response));
             } else {
                 addLog(data.message);
             }
@@ -38,3 +48,4 @@ function sendCmd(cmd, val = null) {
             addLog(err.toString());
         });
 }
+

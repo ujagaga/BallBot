@@ -95,12 +95,13 @@ void TCPC_Process() {
 
                     // -------- MOTOR --------
                     else if (!strcmp(cmd, "motor")) {
+                    
+                        if (doc.containsKey("distance")) {
+                            uint32_t dist = (uint32_t) doc["distance"];
+                            int speed = doc.containsKey("speed") ? (int)doc["speed"] : 100;
+                            bool keepDir = doc.containsKey("keepDir") ? (bool)doc["keepDir"] : true;
 
-                        if (doc.containsKey("speed")) {
-                            MOTOR_move(doc["speed"]);
-                        }                        
-                        else if (doc.containsKey("timeout")) {
-                            MOTOR_setCmdTimeout(doc["timeout"]);
+                            MOTOR_moveToDistance(dist, speed, keepDir);
                         }
                         else {
                             response = "ERR motor param";

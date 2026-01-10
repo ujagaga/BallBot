@@ -23,10 +23,12 @@
         <li><code>/api?cmd=stop</code> – stop video stream</li>
     </ul>
 
-    <h2>Motor</h2>
+    <h2>Motor (move by distance)</h2>
     <ul>
-        <li><code>/api?cmd=speed&val=0..255</code></li>
-        <li><code>/api?cmd=timeout&val=ms</code></li>
+        <li><code>/api?cmd=distance&val=...&speed=...&keepDir=...</code></li>
+        <li><b>val</b> – number of pulses to move</li>
+        <li><b>speed</b> – optional, motor speed (default 600, 1–1023)</li>
+        <li><b>keepDir</b> – optional, true/false, maintain steering correction (default true)</li>
     </ul>
 
     <h2>Servos</h2>

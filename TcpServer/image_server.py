@@ -182,6 +182,8 @@ def update_progress():
 def api_control():
     cmd = request.args.get("cmd")
     value = request.args.get("val")
+    speed = request.args.get("speed")
+    keep_dir = request.args.get("keepDir")
 
     if cmd is None:
         return render_template("api.html")
@@ -208,11 +210,21 @@ def api_control():
         payload = {"cmd": "stream", "enable": False}
 
     # ---------- MOTOR ----------
-    elif cmd == "speed":
-        payload = {"cmd": "motor", "speed": int(value)}
+    elif cmd == "distance":
+        try:
+            distance_val = int(value)
+        except ValueError:
+            return jsonify({"status": "error", "message": "Invalid distance value"}), 400
 
-    elif cmd == "timeout":
-        payload = {"cmd": "motor", "timeout": int(value)}
+        speed_val = int(speed) if speed else 600
+        keep_dir_val = keep_dir.lower() in ("true", "1", "yes") if keep_dir else True
+
+        payload = {
+            "cmd": "motor",
+            "distance": distance_val,
+            "speed": speed_val,
+            "keepDir": keep_dir_val
+        }
 
     # ---------- SERVOS ----------
     elif cmd == "motor1":

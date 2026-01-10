@@ -31,14 +31,15 @@
             <button onclick="sendCmd('stop')">Stop</button>
         </div>
         <div class="section">
-            <h3>Wheel Timeout (ms):</h3>
-            <input type="number" id="timeout" value="255">
-            <button onclick="sendCmd('timeout', getVal('timeout'))">Set</button>
-        </div>
-        <div class="section">
-            <h3>Wheel Speed:</h3>
-            <input type="number" id="speed" value="600">
-            <button onclick="sendCmd('speed', getVal('speed'))">Set Speed</button>
+            <h3>Move Distance (pulses):</h3>
+            <input type="number" id="distance" value="500" min="1" placeholder="Pulses">
+            <input type="number" id="distance_speed" value="600" min="1" max="1023" placeholder="Speed">
+            <label for="keepDir">Keep Direction:</label>
+            <select id="keepDir">
+                <option value="true" selected>True</option>
+                <option value="false">False</option>
+            </select>
+            <button onclick="sendDistance()">Move</button>
         </div>
         <div class="section">
             <h3>Light:</h3>

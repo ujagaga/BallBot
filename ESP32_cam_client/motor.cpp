@@ -5,9 +5,7 @@
 Servo servoMotor[3];
 
 // --- Motor state ---
-static uint32_t cmdTime = 0;
 static int wheelSpeed = 0;
-static uint8_t cmdTimeout = 255;
 
 // --- Servo angles and increments ---
 static uint8_t servoCurrentAngle[3] = {90, 90, 90};
@@ -18,9 +16,27 @@ static const int servoIncrement[3]   = {SERVO_1_SPEED, SERVO_2_SPEED, SERVO_3_SP
 static uint32_t lastServoUpdate = 0;
 const uint16_t SERVO_UPDATE_MS = 20; // update every 20ms
 
-// --- Timeout setter ---
-void MOTOR_setCmdTimeout(uint8_t timeout){
-    cmdTimeout = timeout;
+volatile uint32_t wheel_pulses = 0;
+struct DistanceMove {
+    uint32_t targetPulses;
+    uint32_t lastProcessedPuls;
+    int speed;
+    bool keepDir;
+    bool active;
+};
+DistanceMove currentMove;
+
+static uint32_t get_pulses() {
+    noInterrupts();
+    uint32_t p = wheel_pulses;
+    interrupts();
+
+    return p;
+}
+
+void IRAM_ATTR wheel_isr() {
+    wheel_pulses++;
+
 }
 
 // --- Initialization ---
@@ -28,6 +44,9 @@ void MOTOR_init() {
     servoMotor[0].attach(SERVO_1_PIN);  
     servoMotor[1].attach(SERVO_2_PIN);  
     servoMotor[2].attach(SERVO_3_PIN);  
+
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
+    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
 
     pinMode(BLDC_SPEED_PIN, OUTPUT);
     pinMode(BLDC_DIR_PIN, OUTPUT);
@@ -42,7 +61,7 @@ void MOTOR_setServo(int id, int angle) {
 }
 
 // --- Move BLDC ---
-void MOTOR_move(int speed){  
+static void moveBldc(int speed){  
     bool forward = speed > 0;  
     digitalWrite(BLDC_DIR_PIN, (int)forward); 
 
@@ -50,29 +69,61 @@ void MOTOR_move(int speed){
     if(speed > 1023) speed = 1023;
 
     analogWrite(BLDC_SPEED_PIN, speed);
-    cmdTime = millis();
 }
 
-// --- Process motor & servos ---
-void MOTOR_process(){
+void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection) {
+    noInterrupts();
+    wheel_pulses = 0;
+    interrupts();
+    currentMove.targetPulses = pulses;
+    currentMove.speed = speed;
+    currentMove.active = true;
+    currentMove.keepDir = keepDirection;
+    moveBldc(speed);
+}
+
+static void processServo(int id){
+    int delta = servoTargetAngle[id] - servoCurrentAngle[id];
+    if (delta != 0) {
+        int step = min(abs(delta), servoIncrement[id]);
+        if (delta > 0) servoCurrentAngle[id] += step;
+        else servoCurrentAngle[id] -= step;
+        servoMotor[id].write(servoCurrentAngle[id]);
+    }
+}
+
+// --- Process BLDC motor & servos ---
+void MOTOR_process(){   
     uint32_t now = millis();
 
-    // --- BLDC motor timeout ---
-    if ((now - cmdTime) > cmdTimeout) {
-        analogWrite(BLDC_SPEED_PIN, 0);
-    }
-
-    // --- Servo smooth update every SERVO_UPDATE_MS ---
     if (now - lastServoUpdate >= SERVO_UPDATE_MS) {
         lastServoUpdate = now;
-        for (int i = 0; i < 3; ++i) {
-            int delta = servoTargetAngle[i] - servoCurrentAngle[i];
-            if (delta != 0) {
-                int step = min(abs(delta), servoIncrement[i]);
-                if (delta > 0) servoCurrentAngle[i] += step;
-                else servoCurrentAngle[i] -= step;
-                servoMotor[i].write(servoCurrentAngle[i]);
+        for (int i = 0; i < 3; ++i) { 
+            if(i == STEARING_SERVO){                
+                if(currentMove.active) {
+                    uint32_t pulses = get_pulses(); 
+                    if(currentMove.keepDir && (currentMove.lastProcessedPuls != pulses)){
+                        // New pulse received. Set target for stearing.
+                        currentMove.lastProcessedPuls = pulses;
+                        int targetDelta = STEARING_STRAIGHT_ANGLE - servoCurrentAngle[i];
+                        if (targetDelta != 0) {
+                            int targetStep = min(abs(targetDelta), STEARING_PER_PULSE);
+                            if (targetDelta > 0) servoTargetAngle[i] += targetStep;
+                            else servoTargetAngle[i] -= targetStep;
+                        }
+                    }
+
+                    // Set BLDC speed
+                    if(pulses >= currentMove.targetPulses) {
+                        moveBldc(0); 
+                        currentMove.active = false;
+                    } else {
+                        moveBldc(currentMove.speed); // keep moving
+                    }
+                }
             }
-        }
-    }
+            processServo(i);          
+        }        
+    }    
 }
+
