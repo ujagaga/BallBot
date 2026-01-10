@@ -17,22 +17,18 @@
 </nav>
 
 <div class="container">
-    <!-- Video -->
     <div class="video">
         <img src="/video_feed" width="100%">
     </div>
 
-    <!-- Controls -->
     <div class="controls">
 
-        <!-- Streaming -->
         <div class="section">
             <h3>Streaming:</h3>
             <button onclick="sendCmd('start')">Start</button>
             <button onclick="sendCmd('stop')">Stop</button>
         </div>
 
-        <!-- BLDC Motor Control -->
         <div class="section">
             <h3>Motor Control:</h3>
             <label for="motorSpeed">Speed:</label>
@@ -45,7 +41,6 @@
             </div>
         </div>
 
-        <!-- Steering Servo Control -->
         <div class="section">
             <h3>Steering:</h3>
             <div class="arrow-buttons">
@@ -54,7 +49,6 @@
             </div>
         </div>
 
-        <!-- Light Control -->
         <div class="section">
             <h3>Light:</h3>
             <input type="number" id="light" value="600" min="0" max="1023">
