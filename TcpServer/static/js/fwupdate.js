@@ -18,7 +18,7 @@ formData.append('file', file);
 
 messageDiv.textContent = 'Uploading firmware to server...';
 
-const resp = await fetch('/upload', {
+const resp = await fetch('/upload_fw', {
   method: 'POST',
   body: formData
 });
