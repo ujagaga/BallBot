@@ -5,7 +5,7 @@
 #define SERVO_ARM_PIN             (15)
 #define BLDC_SPEED_PIN            (12)
 #define BLDC_DIR_PIN              (2)
-#define BLDC_TAHO_PIN             (0)
+#define BLDC_TAHO_PIN             (4)
 
 #define SERVO_STEER_SPEED         (1)
 #define SERVO_CLAW_SPEED          (1)
@@ -29,4 +29,5 @@ extern void MOTOR_incrementSteerServo(int angle);
 extern void MOTOR_incrementArmServo(int angle);
 extern void MOTOR_incrementClawServo(int angle);
 extern void MOTOR_process(void);
+extern void MOTOR_initTahoMeter(void);
 extern void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection);

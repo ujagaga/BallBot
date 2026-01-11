@@ -19,10 +19,8 @@
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
-#define LED_GPIO_NUM       4
 
 extern void CAM_Init(void);
 extern camera_fb_t* CAM_Capture(void);
 extern void CAM_Dispose(camera_fb_t* fb);
 extern bool CAM_isInitialized(void);
-extern void CAM_light(int value);

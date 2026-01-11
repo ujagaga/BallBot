@@ -233,16 +233,6 @@ def api_control():
     elif cmd == "servoSteer":
         payload = {"cmd": "servoSteerIncrement", "angle": int(increment_val)}
 
-    # ---------- LIGHT ----------
-    elif cmd == "light":
-        payload = {"cmd": "light", "value": int(value)}
-
-    else:
-        return jsonify({
-            "status": "error",
-            "message": f"Unknown command '{cmd}'"
-        }), 400
-
     # ---------- SEND JSON ----------
     msg = json.dumps(payload) + "\n"
     tcp_server.esp_client.sendall(msg.encode("utf-8"))
@@ -254,7 +244,6 @@ def api_control():
         "sent": payload,
         "response": esp32_response
     }), 200
-
 
 
 @app.route("/")

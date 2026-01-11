@@ -33,11 +33,7 @@ void CAM_Init(){
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
-  camInitialized = (esp_camera_init(&config) == ESP_OK);
-
-  pinMode(LED_GPIO_NUM, OUTPUT);
-  digitalWrite(LED_GPIO_NUM, LOW);
-
+  camInitialized = (esp_camera_init(&config) == ESP_OK); 
 }
 
 camera_fb_t* CAM_Capture() {
@@ -50,8 +46,4 @@ void CAM_Dispose(camera_fb_t* fb){
 
 bool CAM_isInitialized(){
   return camInitialized;
-}
-
-void CAM_light(int value){
-    analogWrite(LED_GPIO_NUM, value);
 }

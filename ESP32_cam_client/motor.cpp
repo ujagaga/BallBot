@@ -52,18 +52,19 @@ static inline void servoMotorInit(
 
 void IRAM_ATTR wheel_isr() {
     wheel_pulses++;
+}
 
+void MOTOR_initTahoMeter(){
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
+    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
 }
 
 // --- Initialization ---
 void MOTOR_init() {
     servoMotorInit(mSteer, 90, SERVO_STEER_SPEED, SERVO_STEER_PIN);
     servoMotorInit(mClaw,  90, SERVO_CLAW_SPEED, SERVO_CLAW_PIN);
-    servoMotorInit(mArm,   90, SERVO_ARM_SPEED, SERVO_ARM_PIN); 
-
+    servoMotorInit(mArm,   90, SERVO_ARM_SPEED, SERVO_ARM_PIN);     
     pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
-
     pinMode(BLDC_SPEED_PIN, OUTPUT);
     pinMode(BLDC_DIR_PIN, OUTPUT);
     digitalWrite(BLDC_SPEED_PIN, LOW);
