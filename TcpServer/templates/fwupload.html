@@ -21,18 +21,20 @@
 </nav>
     <div class="box">
       <!-- Upload Form -->
-      <form id="uploadForm" method="post" enctype="multipart/form-data">
+      <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" id="fileInput" accept=".bin" required>
-        <input type="submit" value="Upload">
+        <button type="submit">Upload to Server</button>
       </form>
 
       <!-- Progress bar for TCP update -->
       <div id="updateSection" style="display:none; margin-top:20px;">
-        <button id="startUpdateBtn">Start Firmware Update</button>
+        <button id="startUpdateBtn" disabled>Start Firmware Update</button>
+
         <div style="margin-top:10px;">
           <progress id="progressBar" value="0" max="100" style="width:100%;"></progress>
           <span id="progressText">0%</span>
         </div>
+
         <div id="updateStatus"></div>
       </div>
 

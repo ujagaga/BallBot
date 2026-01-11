@@ -3,7 +3,7 @@
 import threading
 import cv2
 import time
-from flask import Flask, Response, request, jsonify, render_template, flash
+from flask import Flask, Response, request, jsonify, render_template, flash, redirect
 import config
 import logging
 from logging.handlers import RotatingFileHandler
@@ -123,41 +123,90 @@ def frame_info():
         return jsonify({"status": "ok", "frame_age_ms": age_ms, "frame_count": tcp_server.frame_count}), 200
 
 
+# @application.route("/upload_firmware", methods=["POST"])
+# def upload_firmware():
+#     if "firmware_file" not in request.files:
+#         flash("No file part")
+#         return redirect(safe_url_for("manage_devices"))
+#
+#     file = request.files["firmware_file"]
+#     if file.filename == "":
+#         flash("No selected file")
+#         return redirect(safe_url_for("manage_devices"))
+#
+#     if file and allowed_file(file.filename):
+#         original_name = secure_filename(file.filename)
+#
+#         # prepend timestamp (e.g. 2025-10-18_19-31-45_filename.bin)
+#         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+#         filename = f"{timestamp}_{original_name}"
+#
+#         filepath = os.path.join(application.config["UPLOAD_FOLDER"], filename)
+#         file.save(filepath)
+#
+#         flash(f"Firmware '{original_name}' uploaded as '{filename}'.")
+#         return redirect(safe_url_for("manage_devices"))
+#
+#     flash(f"Invalid file type. Only {ALLOWED_EXTENSIONS} allowed.")
+#     return redirect(safe_url_for("manage_devices"))
+
+
 @app.route("/upload_fw", methods=["GET", "POST"])
 def upload_fw():
     if request.method == "POST":
         if 'file' not in request.files:
-            return "No file part", 400
+            return {"error": "No file part"}, 400
+
         f = request.files['file']
         if f.filename == '':
-            return "No selected file", 400
+            return {"error": "No selected file"}, 400
+
         if not f.filename.lower().endswith(".bin"):
-            return "Only .bin files are allowed", 400
+            return {"error": "Only .bin files allowed"}, 400
 
         save_path = os.path.join(UPLOAD_FOLDER, "firmware.bin")
         f.save(save_path)
-        flash(f"Firmware uploaded successfully!")
 
-    return render_template("fwupload.html" )
+        if not os.path.exists(save_path):
+            return {"error": "Failed to store firmware"}, 500
+
+        return {
+            "status": "ok",
+            "message": "Firmware uploaded to server"
+        }
+    else:
+        return render_template("fwupload.html" )
+
 
 
 @app.route("/start_update", methods=["POST"])
 def start_update():
     firmware_path = os.path.join(UPLOAD_FOLDER, "firmware.bin")
+
     if not os.path.exists(firmware_path):
-        return "No firmware uploaded", 400
+        return {"error": "No firmware uploaded"}, 400
 
     if not tcp_server.esp_client:
-        return "ESP32 not connected", 400
+        return {"error": "ESP32 not connected"}, 400
 
-    def stream_firmware():
-        # Read and send the firmware in chunks
-        with open(firmware_path, "rb") as f:
-            while chunk := f.read(512):
-                tcp_server.esp_client.sendall(chunk)
-                yield chunk  # optional: can be used to stream back to browser for progress
+    def send_firmware():
+        try:
+            with open(firmware_path, "rb") as f:
+                while True:
+                    chunk = f.read(512)
+                    if not chunk:
+                        break
+                    tcp_server.esp_client.sendall(chunk)
+        except Exception as e:
+            print("Firmware send error:", e)
 
-    return Response(stream_firmware(), mimetype='application/octet-stream')
+    threading.Thread(
+        target=send_firmware,
+        daemon=True
+    ).start()
+
+    return {"status": "ok"}
+
 
 
 @app.route("/update_progress")
@@ -167,15 +216,22 @@ def update_progress():
 
     def event_stream():
         while True:
-            if tcp_server.esp_client and tcp_server.esp_client.connected():
-                while tcp_server.esp_client.available():
-                    line = tcp_server.esp_client.read(1024).decode(errors='ignore')
-                    for l in line.splitlines():
-                        if l.startswith("PROGRESS:") or l in ("DONE", "ERR update"):
-                            yield f"data: {l}\n\n"
+            if not tcp_server.esp_client.connected():
+                yield "data: ERR update\n\n"
+                break
+
+            data = tcp_server.esp_client.read(1024)
+            if data:
+                for line in data.decode(errors="ignore").splitlines():
+                    if line.startswith("PROGRESS:") or line in ("DONE", "ERR update"):
+                        yield f"data: {line}\n\n"
+                        if line in ("DONE", "ERR update"):
+                            return
+
             time.sleep(0.05)
 
     return Response(event_stream(), mimetype="text/event-stream")
+
 
 
 @app.route('/api')
