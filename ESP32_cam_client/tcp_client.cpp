@@ -26,10 +26,11 @@ bool TCPC_IsFwUpdateInProgress()
 }
 
 
-void fwUpdateTask(void* arg) {
+void fwUpdateTask(void* arg) {    
     HTTPC_fwUpdate();
     fwUpdateStarted = false;
     vTaskDelete(NULL);
+    CAM_Init();
     streamingFlag = true;
 }
 
@@ -91,16 +92,11 @@ void TCPC_Process() {
 
                     // -------- FIRMWARE UPDATE --------
                     else if (!strcmp(cmd, "fwUpdate")) {
-                        if (!fwUpdateStarted) {
-                            if (CAM_isInitialized()) {
-                                TCPC_Debug("Stopping camera for OTA...");
-                                CAM_Stop();
-                                delay(100);
-                            }
-                            streamingFlag = false;
-                            fwUpdateStarted = true;
-                            xTaskCreate(fwUpdateTask,"fw_update", 8192, nullptr, 1, nullptr);
-                        }
+                        response = "ERR Not implemented";
+                        // if (!fwUpdateStarted) {                           
+                        //     fwUpdateStarted = true;
+                        //     xTaskCreate(fwUpdateTask,"fw_update", 8192, nullptr, 1, nullptr);
+                        // }
                     }   
 
                     // -------- STREAM --------

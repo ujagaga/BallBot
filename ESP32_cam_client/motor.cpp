@@ -1,22 +1,29 @@
-#include <ESP32Servo.h>
 #include <Arduino.h>
 #include "motor.h"
 
-// --- Motor state ---
+// ======================================================
+// ==================== STATE ============================
+// ======================================================
+
 static uint32_t lastServoUpdate = 0;
 const uint16_t SERVO_UPDATE_MS = 20;
+
 volatile uint32_t wheel_pulses = 0;
 
-// --- Servo angles and increments ---
+// ---------------- Servo ----------------
+
 struct ServoMotor {
     uint8_t currentAngle;
     uint8_t targetAngle;
     uint8_t increment;
-    Servo motor;
+    uint8_t pin;
 };
-ServoMotor mSteer;
-ServoMotor mClaw;
-ServoMotor mArm;
+
+static ServoMotor mSteer;
+static ServoMotor mClaw;
+static ServoMotor mArm;
+
+// ---------------- Distance move ----------------
 
 struct DistanceMove {
     uint32_t targetPulses;
@@ -25,17 +32,49 @@ struct DistanceMove {
     bool keepDir;
     bool active;
 };
-DistanceMove currentMove;
+
+static DistanceMove currentMove;
+
+// ======================================================
+// ==================== UTIL =============================
+// ======================================================
+
+static inline uint32_t angleToDuty(uint8_t angle) {
+    uint32_t us = map(angle, 0, 180, SERVO_MIN_US, SERVO_MAX_US);
+    uint32_t maxDuty = (1UL << SERVO_PWM_RES) - 1;
+    return (us * maxDuty) / (1000000UL / SERVO_PWM_FREQ);
+}
+
+static inline void servoWrite(const ServoMotor &m) {
+    ledcWrite(m.pin, angleToDuty(m.currentAngle));
+}
 
 static uint32_t get_pulses() {
     noInterrupts();
     uint32_t p = wheel_pulses;
     interrupts();
-
     return p;
 }
 
-static inline void servoMotorInit(
+static inline uint8_t clamp(int v, int minv, int maxv) {
+    if (v < minv) return minv;
+    if (v > maxv) return maxv;
+    return v;
+}
+
+// ======================================================
+// ==================== ISR ==============================
+// ======================================================
+
+void IRAM_ATTR wheel_isr() {
+    wheel_pulses++;
+}
+
+// ======================================================
+// ==================== INIT =============================
+// ======================================================
+
+static void servoInit(
     ServoMotor &m,
     uint8_t startAngle,
     uint8_t speed,
@@ -44,158 +83,121 @@ static inline void servoMotorInit(
     m.currentAngle = startAngle;
     m.targetAngle  = startAngle;
     m.increment    = speed;
+    m.pin          = pin;
 
-    m.motor.attach(pin);
-    m.motor.write(startAngle);
+    // Attach hardware PWM to pin
+    ledcAttach(pin, SERVO_PWM_FREQ, SERVO_PWM_RES);
+    servoWrite(m);
 }
 
-
-void IRAM_ATTR wheel_isr() {
-    wheel_pulses++;
-}
-
-void MOTOR_initTahoMeter(){
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-    // attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
-}
-
-// --- Initialization ---
 void MOTOR_init() {
-    servoMotorInit(mSteer, 90, SERVO_STEER_SPEED, SERVO_STEER_PIN);
-    servoMotorInit(mClaw,  90, SERVO_CLAW_SPEED, SERVO_CLAW_PIN);
-    servoMotorInit(mArm,   90, SERVO_ARM_SPEED, SERVO_ARM_PIN);     
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-    pinMode(BLDC_SPEED_PIN, OUTPUT);
+
+    // ---- Servos ----
+    servoInit(mSteer, 90, SERVO_STEER_SPEED, SERVO_STEER_PIN);
+    servoInit(mClaw,  90, SERVO_CLAW_SPEED,  SERVO_CLAW_PIN);
+    servoInit(mArm,   90, SERVO_ARM_SPEED,   SERVO_ARM_PIN);
+
+    // ---- BLDC direction ----
     pinMode(BLDC_DIR_PIN, OUTPUT);
-    digitalWrite(BLDC_SPEED_PIN, LOW);
     digitalWrite(BLDC_DIR_PIN, LOW);
+
+    // ---- BLDC PWM ----
+    ledcAttach(BLDC_SPEED_PIN, BLDC_PWM_FREQ, BLDC_PWM_RES);
+    ledcWrite(BLDC_SPEED_PIN, 0);
+
+    // ---- Tacho ----
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
 }
 
-// --- Set servo target ---
-static inline uint8_t clampSteerAngle(int a) {
-    if (a < SERVO_STEER_MIN) return SERVO_STEER_MIN;
-    if (a > SERVO_STEER_MAX) return SERVO_STEER_MAX;
-    return (uint8_t)a;
-}
+// ======================================================
+// ==================== SERVO API ========================
+// ======================================================
 
-static inline uint8_t clampArmAngle(int a) {
-    if (a < SERVO_ARM_MIN) return SERVO_ARM_MIN;
-    if (a > SERVO_ARM_MAX) return SERVO_ARM_MAX;
-    return (uint8_t)a;
-}
+void MOTOR_setSteerServo(int a) { mSteer.targetAngle = clamp(a, SERVO_STEER_MIN, SERVO_STEER_MAX); }
+void MOTOR_setArmServo(int a)   { mArm.targetAngle   = clamp(a, SERVO_ARM_MIN,   SERVO_ARM_MAX); }
+void MOTOR_setClawServo(int a)  { mClaw.targetAngle  = clamp(a, SERVO_CLAW_MIN,  SERVO_CLAW_MAX); }
 
-static inline uint8_t clampClawAngle(int a) {
-    if (a < SERVO_CLAW_MIN) return SERVO_CLAW_MIN;
-    if (a > SERVO_CLAW_MAX) return SERVO_CLAW_MAX;
-    return (uint8_t)a;
-}
+void MOTOR_incrementSteerServo(int d) { MOTOR_setSteerServo(mSteer.targetAngle + d); }
+void MOTOR_incrementArmServo(int d)   { MOTOR_setArmServo(mArm.targetAngle + d); }
+void MOTOR_incrementClawServo(int d)  { MOTOR_setClawServo(mClaw.targetAngle + d); }
 
-void MOTOR_setSteerServo(int angle) {    
-    mSteer.targetAngle = clampSteerAngle(angle);
-}
+// ======================================================
+// ==================== BLDC =============================
+// ======================================================
 
-void MOTOR_incrementSteerServo(int angle) {    
-    mSteer.targetAngle += angle;
-    mSteer.targetAngle = clampSteerAngle(mSteer.targetAngle);
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
-    delay(100);
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-  
-}
+static void moveBldc(int speed) {
 
-void MOTOR_setArmServo(int angle) {    
-    mArm.targetAngle = clampArmAngle(angle);
-}
+    bool forward = speed >= 0;
+    digitalWrite(BLDC_DIR_PIN, forward);
 
-void MOTOR_incrementArmServo(int angle) {    
-    mArm.targetAngle += angle;
-    mArm.targetAngle = clampArmAngle(mArm.targetAngle);
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
-    delay(100);
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-}
+    uint32_t duty = abs(speed);
+    if (duty > 1023) duty = 1023;
 
-void MOTOR_setClawServo(int angle) {    
-    mClaw.targetAngle = clampClawAngle(angle);
-}
-
-void MOTOR_incrementClawServo(int angle) {    
-    mClaw.targetAngle += angle;
-    mClaw.targetAngle = clampClawAngle(mClaw.targetAngle);
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
-    delay(100);
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-}
-
-// --- Move BLDC ---
-static void moveBldc(int speed){  
-    bool forward = speed > 0;  
-    digitalWrite(BLDC_DIR_PIN, (int)forward); 
-
-    if(speed < 0) speed = -speed;
-    if(speed > 1023) speed = 1023;
-
-    analogWrite(BLDC_SPEED_PIN, speed);
+    ledcWrite(BLDC_SPEED_PIN, duty);
 }
 
 void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection) {
+
     noInterrupts();
     wheel_pulses = 0;
     interrupts();
+
     currentMove.targetPulses = pulses;
     currentMove.lastProcessedPuls = 0;
     currentMove.speed = speed;
-    currentMove.active = true;
     currentMove.keepDir = keepDirection;
+    currentMove.active = true;
+
     moveBldc(speed);
 }
 
-static void processServo(ServoMotor &m, int minAngle, int maxAngle){
+// ======================================================
+// ==================== PROCESS ==========================
+// ======================================================
+
+static void processServo(ServoMotor &m, int minA, int maxA) {
+
     int delta = m.targetAngle - m.currentAngle;
-    if (delta != 0) {
-        int step = min(abs(delta), (int)m.increment);
-        if (delta > 0) m.currentAngle += step;
-        else m.currentAngle -= step;
+    if (!delta) return;
 
-        if (m.currentAngle < minAngle) m.currentAngle = minAngle;
-        if (m.currentAngle > maxAngle) m.currentAngle = maxAngle;
+    int step = min(abs(delta), (int)m.increment);
+    m.currentAngle += (delta > 0) ? step : -step;
+    m.currentAngle = clamp(m.currentAngle, minA, maxA);
 
-        m.motor.write(m.currentAngle);
-    }
+    servoWrite(m);
 }
 
-// --- Process BLDC motor & servos ---
-void MOTOR_process(){   
-    return;
+void MOTOR_process() {
 
     uint32_t now = millis();
+    if (now - lastServoUpdate < SERVO_UPDATE_MS) return;
+    lastServoUpdate = now;
 
-    if (now - lastServoUpdate >= SERVO_UPDATE_MS) {
-        lastServoUpdate = now;        
+    if (currentMove.active) {
 
-        if(currentMove.active) {
-            uint32_t pulses = get_pulses(); 
-            if(currentMove.keepDir && (currentMove.lastProcessedPuls != pulses)){
-                // New pulse received. Set target for steering.
-                currentMove.lastProcessedPuls = pulses;
-                int targetDelta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;                
-                if (targetDelta != 0) {
-                    int targetStep = min(abs(targetDelta), STEERING_PER_PULSE);
-                    mSteer.targetAngle = mSteer.currentAngle + (targetStep > 0 ? targetStep : -targetStep);                   
-                }
+        uint32_t pulses = get_pulses();
+
+        if (currentMove.keepDir && pulses != currentMove.lastProcessedPuls) {
+            currentMove.lastProcessedPuls = pulses;
+
+            int delta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;
+            if (delta) {
+                int step = min(abs(delta), STEERING_PER_PULSE);
+                mSteer.targetAngle = mSteer.currentAngle +
+                                     ((delta > 0) ? step : -step);
             }
+        }
 
-            // Set BLDC speed
-            if(pulses >= currentMove.targetPulses) {
-                moveBldc(0); 
-                currentMove.active = false;
-            } else {
-                moveBldc(currentMove.speed); // keep moving
-            }
-        }       
-        processServo(mSteer, SERVO_STEER_MIN, SERVO_STEER_MAX);          
-        processServo(mClaw, SERVO_CLAW_MIN, SERVO_CLAW_MAX);
-        processServo(mArm, SERVO_ARM_MIN, SERVO_ARM_MAX);  
-    }    
+        if (pulses >= currentMove.targetPulses) {
+            moveBldc(0);
+            currentMove.active = false;
+        } else {
+            moveBldc(currentMove.speed);
+        }
+    }
+
+    processServo(mSteer, SERVO_STEER_MIN, SERVO_STEER_MAX);
+    processServo(mClaw,  SERVO_CLAW_MIN,  SERVO_CLAW_MAX);
+    processServo(mArm,   SERVO_ARM_MIN,   SERVO_ARM_MAX);
 }
-
