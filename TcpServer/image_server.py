@@ -181,19 +181,20 @@ def update_progress():
 @app.route('/api')
 def api_control():
     cmd = request.args.get("cmd")
-    value = request.args.get("val")
-    speed = request.args.get("speed")
     keep_dir = request.args.get("keepDir")
     try:
-        increment_val = int(value)
+        value = int(request.args.get("val"))
     except ValueError:
-        increment_val = 0
+        value = 0
+    try:
+        speed = int(request.args.get("speed"))
+    except ValueError:
+        speed = 600
 
     if cmd is None:
         return render_template("api.html")
 
     cmd = cmd.lower()
-    value = (value or "").lower()
 
     if not tcp_server.esp_client:
         return jsonify({"status": "error", "message": "ESP32 not connected"}), 400
@@ -214,24 +215,22 @@ def api_control():
 
     # ---------- MOTOR ----------
     elif cmd == "distance":
-        speed_val = int(speed) if speed else 600
         keep_dir_val = keep_dir.lower() in ("true", "1", "yes") if keep_dir else True
-        dist_val = int(value) if value else 0
 
         payload = {
             "cmd": "motor",
-            "distance": dist_val,
-            "speed": speed_val,
+            "distance": value,
+            "speed": speed,
             "keepDir": keep_dir_val
         }
 
     # ---------- SERVO ----------
     elif cmd == "servoclaw":
-        payload = {"cmd": "servoClawIncrement", "angle": increment_val}
+        payload = {"cmd": "servoClawIncrement", "angle": value}
     elif cmd == "servoarm":
-        payload = {"cmd": "servoArmIncrement", "angle": increment_val}
+        payload = {"cmd": "servoArmIncrement", "angle": value}
     elif cmd == "servosteer":
-        payload = {"cmd": "servoSteerIncrement", "angle": increment_val}
+        payload = {"cmd": "servoSteerIncrement", "angle": value}
 
     # ---------- SEND JSON ----------
     if payload is None:

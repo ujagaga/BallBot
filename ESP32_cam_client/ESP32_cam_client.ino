@@ -13,6 +13,21 @@ void setup() {
   MOTOR_init();
   DISTANCE_init();  
   CAM_Init(); 
+  pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+  delay(100);
+  pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
+  delay(100);
+   pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+  delay(100);
+  pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
+  delay(100);
+   pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+  delay(100);
+  pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
+  delay(100);
+   pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+  delay(100);
+  pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
 }
 
 void loop() {  

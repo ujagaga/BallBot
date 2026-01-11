@@ -56,7 +56,7 @@ void IRAM_ATTR wheel_isr() {
 
 void MOTOR_initTahoMeter(){
     pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
-    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
 }
 
 // --- Initialization ---
@@ -97,6 +97,10 @@ void MOTOR_setSteerServo(int angle) {
 void MOTOR_incrementSteerServo(int angle) {    
     mSteer.targetAngle += angle;
     mSteer.targetAngle = clampSteerAngle(mSteer.targetAngle);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+    delay(100);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
+  
 }
 
 void MOTOR_setArmServo(int angle) {    
@@ -106,6 +110,9 @@ void MOTOR_setArmServo(int angle) {
 void MOTOR_incrementArmServo(int angle) {    
     mArm.targetAngle += angle;
     mArm.targetAngle = clampArmAngle(mArm.targetAngle);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+    delay(100);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
 }
 
 void MOTOR_setClawServo(int angle) {    
@@ -115,6 +122,9 @@ void MOTOR_setClawServo(int angle) {
 void MOTOR_incrementClawServo(int angle) {    
     mClaw.targetAngle += angle;
     mClaw.targetAngle = clampClawAngle(mClaw.targetAngle);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLDOWN); 
+    delay(100);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP); 
 }
 
 // --- Move BLDC ---
@@ -156,6 +166,8 @@ static void processServo(ServoMotor &m, int minAngle, int maxAngle){
 
 // --- Process BLDC motor & servos ---
 void MOTOR_process(){   
+    return;
+
     uint32_t now = millis();
 
     if (now - lastServoUpdate >= SERVO_UPDATE_MS) {

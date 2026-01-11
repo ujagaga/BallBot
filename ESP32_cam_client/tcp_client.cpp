@@ -23,7 +23,7 @@ void TCPC_Process() {
     // --- 0. Make sure wifi is available ---
     if(!WIFIC_connected()){
         lastConnectAttemptTime = 0;
-        client.stop();
+        // client.stop();
         return;
     }
     if(lastConnectAttemptTime == 0){
