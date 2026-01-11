@@ -3,7 +3,7 @@
 import threading
 import cv2
 import time
-from flask import Flask, Response, request, jsonify, render_template, flash, redirect
+from flask import Flask, Response, request, jsonify, render_template, abort, send_from_directory
 import config
 import logging
 from logging.handlers import RotatingFileHandler
@@ -11,6 +11,7 @@ import argparse
 import os
 import tcp_server
 import json
+from werkzeug.utils import secure_filename
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'firmware')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -123,34 +124,6 @@ def frame_info():
         return jsonify({"status": "ok", "frame_age_ms": age_ms, "frame_count": tcp_server.frame_count}), 200
 
 
-# @application.route("/upload_firmware", methods=["POST"])
-# def upload_firmware():
-#     if "firmware_file" not in request.files:
-#         flash("No file part")
-#         return redirect(safe_url_for("manage_devices"))
-#
-#     file = request.files["firmware_file"]
-#     if file.filename == "":
-#         flash("No selected file")
-#         return redirect(safe_url_for("manage_devices"))
-#
-#     if file and allowed_file(file.filename):
-#         original_name = secure_filename(file.filename)
-#
-#         # prepend timestamp (e.g. 2025-10-18_19-31-45_filename.bin)
-#         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-#         filename = f"{timestamp}_{original_name}"
-#
-#         filepath = os.path.join(application.config["UPLOAD_FOLDER"], filename)
-#         file.save(filepath)
-#
-#         flash(f"Firmware '{original_name}' uploaded as '{filename}'.")
-#         return redirect(safe_url_for("manage_devices"))
-#
-#     flash(f"Invalid file type. Only {ALLOWED_EXTENSIONS} allowed.")
-#     return redirect(safe_url_for("manage_devices"))
-
-
 @app.route("/upload_fw", methods=["GET", "POST"])
 def upload_fw():
     if request.method == "POST":
@@ -176,62 +149,6 @@ def upload_fw():
         }
     else:
         return render_template("fwupload.html" )
-
-
-
-@app.route("/start_update", methods=["POST"])
-def start_update():
-    firmware_path = os.path.join(UPLOAD_FOLDER, "firmware.bin")
-
-    if not os.path.exists(firmware_path):
-        return {"error": "No firmware uploaded"}, 400
-
-    if not tcp_server.esp_client:
-        return {"error": "ESP32 not connected"}, 400
-
-    def send_firmware():
-        try:
-            with open(firmware_path, "rb") as f:
-                while True:
-                    chunk = f.read(512)
-                    if not chunk:
-                        break
-                    tcp_server.esp_client.sendall(chunk)
-        except Exception as e:
-            print("Firmware send error:", e)
-
-    threading.Thread(
-        target=send_firmware,
-        daemon=True
-    ).start()
-
-    return {"status": "ok"}
-
-
-
-@app.route("/update_progress")
-def update_progress():
-    if not tcp_server.esp_client:
-        return "ESP32 not connected", 400
-
-    def event_stream():
-        while True:
-            if not tcp_server.esp_client.connected():
-                yield "data: ERR update\n\n"
-                break
-
-            data = tcp_server.esp_client.read(1024)
-            if data:
-                for line in data.decode(errors="ignore").splitlines():
-                    if line.startswith("PROGRESS:") or line in ("DONE", "ERR update"):
-                        yield f"data: {line}\n\n"
-                        if line in ("DONE", "ERR update"):
-                            return
-
-            time.sleep(0.05)
-
-    return Response(event_stream(), mimetype="text/event-stream")
-
 
 
 @app.route('/api')
@@ -287,6 +204,10 @@ def api_control():
         payload = {"cmd": "servoArmIncrement", "angle": value}
     elif cmd == "servosteer":
         payload = {"cmd": "servoSteerIncrement", "angle": value}
+
+    # ---------- FIRMWARE UPDATE ----------
+    elif cmd == "fwupdate":
+        payload = {"cmd": "fwUpdate"}
 
     # ---------- SEND JSON ----------
     if payload is None:
@@ -352,6 +273,15 @@ def next_frame():
         }
     )
 
+@app.route("/download_firmware")
+def download_firmware():
+    upload_folder = UPLOAD_FOLDER
+    filepath = os.path.join(upload_folder, "firmware.bin")
+    if not os.path.exists(filepath):
+        abort(404)
+
+    # Send the file with correct MIME type
+    return send_from_directory(upload_folder, "firmware.bin", as_attachment=True, mimetype="application/octet-stream")
 
 
 if __name__ == "__main__":

@@ -3,8 +3,6 @@ const fileInput = document.getElementById('fileInput');
 const messageDiv = document.getElementById('message');
 const updateSection = document.getElementById('updateSection');
 const startUpdateBtn = document.getElementById('startUpdateBtn');
-const progressBar = document.getElementById('progressBar');
-const progressText = document.getElementById('progressText');
 const updateStatus = document.getElementById('updateStatus');
 
 let firmwareUploaded = false;
@@ -56,7 +54,7 @@ uploadForm.addEventListener('submit', async (e) => {
 });
 
 /* =========================
-   Start ESP32 update
+   Trigger ESP32 firmware update
    ========================= */
 startUpdateBtn.addEventListener('click', async () => {
     if (!firmwareUploaded) {
@@ -64,46 +62,22 @@ startUpdateBtn.addEventListener('click', async () => {
         return;
     }
 
-    updateStatus.textContent = 'Starting update...';
-    progressBar.value = 0;
-    progressText.textContent = '0%';
+    updateStatus.textContent = 'Sending firmware update command to ESP32...';
 
     try {
-        const resp = await fetch('/start_update', { method: 'POST' });
-        if (!resp.ok) {
-            updateStatus.textContent = 'Failed to start update';
+        const resp = await fetch('/api?cmd=fwupdate');
+        const data = await resp.json();
+
+        if (!resp.ok || data.status !== 'ok') {
+            updateStatus.textContent = 'Failed to trigger update';
             return;
         }
 
-        updateStatus.textContent = 'Updating...';
-
-        const evtSource = new EventSource('/update_progress');
-
-        evtSource.onmessage = (event) => {
-            const msg = event.data;
-
-            if (msg.startsWith('PROGRESS:')) {
-                const percent = parseInt(msg.split(':')[1], 10);
-                progressBar.value = percent;
-                progressText.textContent = percent + '%';
-            } else if (msg === 'DONE') {
-                progressBar.value = 100;
-                progressText.textContent = '100%';
-                updateStatus.textContent = 'Update complete!';
-                evtSource.close();
-            } else if (msg === 'ERR update') {
-                updateStatus.textContent = 'Update failed!';
-                evtSource.close();
-            }
-        };
-
-        evtSource.onerror = () => {
-            updateStatus.textContent = 'Connection lost';
-            evtSource.close();
-        };
+        updateStatus.textContent =
+            'Firmware update triggered. ESP32 is downloading and updating...';
 
     } catch (err) {
         console.error(err);
-        updateStatus.textContent = 'Update error';
+        updateStatus.textContent = 'Error triggering update';
     }
 });
