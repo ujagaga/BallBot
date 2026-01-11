@@ -8,17 +8,17 @@
 #define BLDC_TAHO_PIN             (4)
 
 #define SERVO_STEER_SPEED         (2)
-#define SERVO_CLAW_SPEED          (2)
-#define SERVO_ARM_SPEED           (2)
+#define SERVO_CLAW_SPEED          (3)
+#define SERVO_ARM_SPEED           (3)
 
-#define SERVO_STEER_MIN           (15)
-#define SERVO_STEER_MAX           (165)
-#define SERVO_CLAW_MIN            (70)
-#define SERVO_CLAW_MAX            (100)
-#define SERVO_ARM_MIN             (10)
-#define SERVO_ARM_MAX             (170)
+#define SERVO_STEER_MIN           (12)
+#define SERVO_STEER_MAX           (160)
+#define SERVO_CLAW_MIN            (83)
+#define SERVO_CLAW_MAX            (105)
+#define SERVO_ARM_MIN             (45)
+#define SERVO_ARM_MAX             (140)
 
-#define STEERING_STRAIGHT_ANGLE   (90)
+#define STEERING_STRAIGHT_ANGLE   (82)
 #define STEERING_PER_PULSE        (10)
 
 #define SERVO_PWM_FREQ     50

@@ -208,7 +208,7 @@ def api_control():
         payload = {"cmd": "servoArm", "angle": value}
     elif cmd == "servosteeradd":
         payload = {"cmd": "servoSteerIncrement", "angle": value}
-    elif cmd == "servosteerser":
+    elif cmd == "servosteerset":
         payload = {"cmd": "servoSteer", "angle": value}
 
 
