@@ -226,14 +226,20 @@ def api_control():
         }
 
     # ---------- SERVO ----------
-    elif cmd == "servoClaw":
-        payload = {"cmd": "servoClawIncrement", "angle": int(increment_val)}
-    elif cmd == "servoArm":
-        payload = {"cmd": "servoArmIncrement",  "angle": int(increment_val)}
-    elif cmd == "servoSteer":
-        payload = {"cmd": "servoSteerIncrement", "angle": int(increment_val)}
+    elif cmd == "servoclaw":
+        payload = {"cmd": "servoClawIncrement", "angle": increment_val}
+    elif cmd == "servoarm":
+        payload = {"cmd": "servoArmIncrement", "angle": increment_val}
+    elif cmd == "servosteer":
+        payload = {"cmd": "servoSteerIncrement", "angle": increment_val}
 
     # ---------- SEND JSON ----------
+    if payload is None:
+        return jsonify({
+            "status": "error",
+            "message": f"Unknown command '{cmd}'"
+        }), 400
+
     msg = json.dumps(payload) + "\n"
     tcp_server.esp_client.sendall(msg.encode("utf-8"))
 
