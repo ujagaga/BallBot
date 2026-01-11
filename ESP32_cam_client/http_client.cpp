@@ -5,14 +5,16 @@
 #include "tcp_client.h"
 
 static bool fwUpdateStarted = false;
+static String firmwareDownloadUrl = String(TCP_SERVER_URL) + "/download_firmware";
 
 void HTTPC_fwUpdate() {
   WiFiClient updateClient;
   HTTPClient http;
+  http.setTimeout(15000);
 
-  TCPC_Debug("Starting OTA update from: " + String(TCP_SERVER_URL));
+  TCPC_Debug("Starting OTA update from: " + firmwareDownloadUrl);
 
-  http.begin(updateClient, TCP_SERVER_URL);
+  http.begin(updateClient, firmwareDownloadUrl);
   int httpCode = http.GET();
 
   if (httpCode == HTTP_CODE_OK) {
@@ -27,6 +29,8 @@ void HTTPC_fwUpdate() {
         TCPC_Debug("OTA written successfully, size: " + String(written));
       } else {
         TCPC_Debug("OTA write failed! Written only: " + String(written) + " / " + String(contentLength));
+        Update.abort();
+        return;
       }
 
       if (Update.end()) {
@@ -38,13 +42,13 @@ void HTTPC_fwUpdate() {
           TCPC_Debug("OTA not finished. Something went wrong!");
         }
       } else {
-        TCPC_Debug("OTA end error (%d): %s\n", Update.getError(), Update.errorString());
+        TCPC_Debug(String("OTA end error") + Update.errorString());
       }
     } else {
       TCPC_Debug("Not enough space for OTA update!");
     }
   } else {
-    TCPC_Debug("HTTP OTA failed, code: %d\n", httpCode);
+    TCPC_Debug(String("HTTP OTA failed:") + httpCode);
   }
 
   http.end();

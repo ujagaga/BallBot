@@ -12,3 +12,4 @@
 
 extern void TCPC_Process(void);
 extern bool TCPC_Debug(String message);
+extern bool TCPC_IsFwUpdateInProgress(void);

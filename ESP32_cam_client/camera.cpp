@@ -5,6 +5,10 @@
 static bool camInitialized = false;
 
 void CAM_Init(){
+  if (camInitialized) {
+    CAM_Stop();  // ensure previous instance is deinitialized
+  }
+
   // Camera config
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -32,7 +36,7 @@ void CAM_Init(){
   config.fb_location = CAMERA_FB_IN_PSRAM;
   config.jpeg_quality = 12;
   config.fb_count = 1;
-
+  
   camInitialized = (esp_camera_init(&config) == ESP_OK); 
 }
 
@@ -46,4 +50,11 @@ void CAM_Dispose(camera_fb_t* fb){
 
 bool CAM_isInitialized(){
   return camInitialized;
+}
+
+void CAM_Stop() {
+    if (camInitialized) {
+        esp_camera_deinit();
+        camInitialized = false;
+    }
 }

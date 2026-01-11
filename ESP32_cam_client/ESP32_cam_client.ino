@@ -18,5 +18,7 @@ void setup() {
 
 void loop() {  
   TCPC_Process(); 
-  MOTOR_process(); 
+  if(!TCPC_IsFwUpdateInProgress()){
+    MOTOR_process(); 
+  }  
 }

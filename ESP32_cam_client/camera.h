@@ -24,3 +24,4 @@ extern void CAM_Init(void);
 extern camera_fb_t* CAM_Capture(void);
 extern void CAM_Dispose(camera_fb_t* fb);
 extern bool CAM_isInitialized(void);
+extern void CAM_Stop(void);
