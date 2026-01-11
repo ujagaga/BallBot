@@ -184,11 +184,11 @@ def api_control():
     keep_dir = request.args.get("keepDir")
     try:
         value = int(request.args.get("val"))
-    except ValueError:
+    except:
         value = 0
     try:
         speed = int(request.args.get("speed"))
-    except ValueError:
+    except:
         speed = 600
 
     if cmd is None:
