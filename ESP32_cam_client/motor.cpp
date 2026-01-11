@@ -59,7 +59,7 @@ static uint32_t get_pulses() {
 static inline uint8_t clamp(int v, int minv, int maxv) {
     if (v < minv) return minv;
     if (v > maxv) return maxv;
-    return v;
+    return (uint8_t)v;
 }
 
 // ======================================================

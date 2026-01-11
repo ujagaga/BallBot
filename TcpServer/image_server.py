@@ -198,12 +198,19 @@ def api_control():
         }
 
     # ---------- SERVO ----------
-    elif cmd == "servoclaw":
+    elif cmd == "servoclawadd":
         payload = {"cmd": "servoClawIncrement", "angle": value}
-    elif cmd == "servoarm":
+    elif cmd == "servoclawset":
+        payload = {"cmd": "servoClaw", "angle": value}
+    elif cmd == "servoarmadd":
         payload = {"cmd": "servoArmIncrement", "angle": value}
-    elif cmd == "servosteer":
+    elif cmd == "servoarmset":
+        payload = {"cmd": "servoArm", "angle": value}
+    elif cmd == "servosteeradd":
         payload = {"cmd": "servoSteerIncrement", "angle": value}
+    elif cmd == "servosteerser":
+        payload = {"cmd": "servoSteer", "angle": value}
+
 
     # ---------- FIRMWARE UPDATE ----------
     elif cmd == "fwupdate":
