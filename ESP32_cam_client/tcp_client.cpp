@@ -4,6 +4,7 @@
 #include "tcp_client.h"
 #include "motor.h"
 #include "wifi_connection.h"
+#include "http_client.h"
 
 // ---------------- CONFIG ----------------
 static constexpr size_t JSON_BUF = 512;
@@ -73,6 +74,11 @@ void TCPC_Process() {
                     if (!cmd) {
                         response = "ERR no cmd";
                     }
+
+                    // -------- FIRMWARE UPDATE --------
+                    else if (!strcmp(cmd, "fwUpdate")) {
+                        HTTPC_fwUpdate();
+                    }   
 
                     // -------- STREAM --------
                     else if (!strcmp(cmd, "stream")) {
