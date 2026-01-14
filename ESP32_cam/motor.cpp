@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "motor.h"
+#include "logger.h"
 
 // ======================================================
 // ==================== STATE ============================
@@ -105,9 +106,9 @@ void MOTOR_init() {
     ledcAttach(BLDC_SPEED_PIN, BLDC_PWM_FREQ, BLDC_PWM_RES);
     ledcWrite(BLDC_SPEED_PIN, 0);
 
-    // ---- Tacho ----
-    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
+    // ---- Tacho ---- Does not work
+    // pinMode(BLDC_TAHO_PIN, INPUT_PULLUP);
+    // attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
 }
 
 // ======================================================
@@ -152,6 +153,17 @@ void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection) {
     moveBldc(speed);
 }
 
+void MOTOR_stopAll(){
+    mSteer.targetAngle = mSteer.currentAngle;
+    mArm.targetAngle = mArm.currentAngle;
+    mClaw.targetAngle = mClaw.currentAngle;
+    servoWrite(mSteer);
+    servoWrite(mArm);
+    servoWrite(mClaw);
+    moveBldc(0);
+    currentMove.active = false;
+}
+
 // ======================================================
 // ==================== PROCESS ==========================
 // ======================================================
@@ -175,12 +187,7 @@ void MOTOR_process() {
     lastServoUpdate = now;
 
     if (currentMove.active) {
-
-        uint32_t pulses = get_pulses();
-
-        if (currentMove.keepDir && pulses != currentMove.lastProcessedPuls) {
-            currentMove.lastProcessedPuls = pulses;
-
+        if (currentMove.keepDir){
             int delta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;
             if (delta) {
                 int step = min(abs(delta), STEERING_PER_PULSE);
@@ -188,6 +195,19 @@ void MOTOR_process() {
                                      ((delta > 0) ? step : -step);
             }
         }
+
+        uint32_t pulses = get_pulses();
+
+        // if (currentMove.keepDir && pulses != currentMove.lastProcessedPuls) {
+        //     currentMove.lastProcessedPuls = pulses;
+
+        //     int delta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;
+        //     if (delta) {
+        //         int step = min(abs(delta), STEERING_PER_PULSE);
+        //         mSteer.targetAngle = mSteer.currentAngle +
+        //                              ((delta > 0) ? step : -step);
+        //     }
+        // }
 
         if (pulses >= currentMove.targetPulses) {
             moveBldc(0);

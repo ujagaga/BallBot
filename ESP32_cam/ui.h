@@ -106,15 +106,23 @@ button:active{
     <div class="group">
         <div class="joystick">
             <div></div>
-            <button onmousedown="cmd('fwd')" onmouseup="stop()">FWD</button>
+            <button 
+                onmousedown="startCmd('fwd')" onmouseup="stopCmd()" 
+                ontouchstart="startCmd('fwd')" ontouchend="stopCmd()">FWD</button>
             <div></div>
 
-            <button onmousedown="cmd('left')" onmouseup="stop()">LEFT</button>
+            <button 
+                onmousedown="startCmd('left')" onmouseup="stopCmd()" 
+                ontouchstart="startCmd('left')" ontouchend="stopCmd()">LEFT</button>
             <div></div>
-            <button onmousedown="cmd('right')" onmouseup="stop()">RIGHT</button>
+            <button 
+                onmousedown="startCmd('right')" onmouseup="stopCmd()" 
+                ontouchstart="startCmd('right')" ontouchend="stopCmd()">RIGHT</button>
 
             <div></div>
-            <button onmousedown="cmd('rev')" onmouseup="stop()">REV</button>
+            <button 
+                onmousedown="startCmd('rev')" onmouseup="stopCmd()" 
+                ontouchstart="startCmd('rev')" ontouchend="stopCmd()">REV</button>
             <div></div>
         </div>
     </div>
@@ -132,35 +140,52 @@ button:active{
 </div>
 
 <script>
-let snapTimer=null;
+let snapTimer = null;
+let cmdInterval = null; // Variable to hold the repetition timer
 
 function refreshImage(){
-    const img=document.getElementById('cam');
-    img.onload=()=> {
+    const img = document.getElementById('cam');
+    img.onload = () => {
         if(snapTimer){
-            setTimeout(refreshImage,200);
+            setTimeout(refreshImage, 400);
         }
     };
-    img.src='/capture?ts='+Date.now();
+    img.src = '/capture?ts=' + Date.now();
 }
 
 function toggleSnapshots(){
     if(snapTimer){
-        snapTimer=null;
-    }else{
-        snapTimer=true;
+        snapTimer = null;
+    } else {
+        snapTimer = true;
         refreshImage();
     }
 }
 
-function cmd(action){
-    fetch('/api/cmd?action='+action);
+// Function to start repeating a command
+function startCmd(action) {
+    if (cmdInterval) return; // Prevent multiple timers if button is mashed
+    
+    // Send the first command immediately
+    fetch('/api/cmd?action=' + action);
+    
+    // Set up the repetition every 300ms
+    cmdInterval = setInterval(() => {
+        fetch('/api/cmd?action=' + action);
+    }, 300);
 }
-function stop(){
+
+// Function to stop repeating and send a stop command
+function stopCmd() {
+    if (cmdInterval) {
+        clearInterval(cmdInterval);
+        cmdInterval = null;
+    }
     fetch('/api/cmd?action=stop');
 }
+
 function cmdOnce(action){
-    fetch('/api/cmd?action='+action);
+    fetch('/api/cmd?action=' + action);
 }
 </script>
 </body>

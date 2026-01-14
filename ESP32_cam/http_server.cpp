@@ -7,6 +7,7 @@
 #include "http_server.h"
 #include "http_client.h"
 #include "logger.h"
+#include "motor.h"
 
 static httpd_handle_t camera_httpd = NULL;
 
@@ -90,6 +91,63 @@ static esp_err_t api_logs_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+// ---------------- Index Handler ----------------
+static esp_err_t api_cmd_handler(httpd_req_t *req)
+{
+    char query[128] = {0};
+    char action[32] = {0};
+
+    /* Extract query string */
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing query");
+        return ESP_FAIL;
+    }
+
+    /* Extract 'action' parameter */
+    if (httpd_query_key_value(query, "action", action, sizeof(action)) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing action");
+        return ESP_FAIL;
+    }
+
+    /* Optional: block commands during OTA */
+    if (HTTPC_fwUpdateInProgress()) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "OTA in progress");
+        return ESP_FAIL;
+    }
+
+    /* Dispatch command */
+    if (strcmp(action, "grab") == 0) {
+        MOTOR_setClawServo(SERVO_CLAW_MIN);
+    }
+    else if (strcmp(action, "release") == 0) {
+        MOTOR_setClawServo(SERVO_CLAW_MAX);
+    }    
+    else if (strcmp(action, "fwd") == 0) {
+        MOTOR_moveToDistance(10, 600, true);
+    }
+    else if (strcmp(action, "rev") == 0) {
+        MOTOR_moveToDistance(10, -600, true);
+    }
+    else if (strcmp(action, "left") == 0) {
+        MOTOR_incrementSteerServo(-10);
+    }
+    else if (strcmp(action, "right") == 0) {
+        MOTOR_incrementSteerServo(10);
+    }
+    else if (strcmp(action, "stop") == 0) {
+        MOTOR_stopAll();
+    }
+    else {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid action");
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+
 
 // ---------------- HTTP Server Init ----------------
 void HTTP_SERVER_init()
@@ -125,10 +183,18 @@ void HTTP_SERVER_init()
         .user_ctx = NULL
     };
 
+    httpd_uri_t api_cmd = {
+        .uri = "/api/cmd",
+        .method = HTTP_GET,
+        .handler = api_cmd_handler,
+        .user_ctx = NULL
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &capture_uri);
         httpd_register_uri_handler(camera_httpd, &api_ota_uri);
         httpd_register_uri_handler(camera_httpd, &api_logs);
+        httpd_register_uri_handler(camera_httpd, &api_cmd);
     }
 }
