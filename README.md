@@ -16,49 +16,20 @@ The screw holles are made smaller and screws are heated using a soldering iron b
 
 ## Server
 
-1. Raspberry Pi 4 is configured as a WiFi access point
-2. RPI4 runs a Python TCP server which:
-	- receives the video stream from the ESP32 CAM module
-	- receives debugging messages
-	- receives ultrasound sensor distance measurements
-	- sends commands to control the motors
-	- provides firmware updates for ESP32 module
-3. RPI4 runs a Flask app to enable manual control, firmware upload, firmware update triggering and access to an API for external control
-4. A secondary python app will be created to automate the robot operation 
+1. ESP32 CAM configured as a WiFi access point
+2. ESP32 runs an HTTP server to provide video stream, manual control and API access
 
-## Setting up a Raspberry Pi 4
+# Updating ESP32 firmware via WiFi
+There is an /api/ota endpoint to which you need to make a post request to trigger the update. Basically you need to serve the image file and then trigger the update by sending the url where the image can be downloaded. I provided a python script to simplify this at:
 
-The robot will connect to a wifi hotspot and then to the TCP server. As I am using a Raspberry pi 4, here is my setup.
+        fw_update_helper/update_firmware.py
 
-1. Unblock the wifi by setting up the wifi country `sudo raspi-config`→ Localisation Options → WLAN Country ...
-
-2. Configure wifi AP, ensure IP address and make it persistent
-```
-sudo nmcli device wifi hotspot ifname wlan0 ssid BallBot password BallBot123
-sudo nmcli connection modify Hotspot ipv4.addresses 10.42.0.1/24
-sudo nmcli connection modify Hotspot ipv4.method shared
-sudo nmcli connection modify Hotspot connection.autoconnect yes
-nmcli device status
-```
-If you need to change the password: 
-```
-sudo nmcli connection modify Hotspot wifi-sec.psk 'New_strong_password'
-```
-
-3. Clone this repository and install the servers
-```
-cd ~
-git clone https://github.com/ujagaga/BallBot.git
-cd BallBot/TcpServer
-./install.sh
-```
-
-4. Open your web browser and navigate to the servers IP address at port 9000.
+The only requirement is `pip install requests`
 
 ## Status
 - The schematic and the 3D model are finished.
-- The ESP32 CAM code is done and working
-- The TCP and Flask servers are ready and working
-- TODO: solder everything, put it together, test it and start developping the automation code.
+- The ESP32 CAM firmware update via WiFi works
+- The Firmware update python file is OK
+- working on ESP32 HTTP server UI
 
 ![3D Preview](Screenshot.png)

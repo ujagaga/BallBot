@@ -1,0 +1,134 @@
+// http_server.cpp
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <esp_http_server.h>
+#include "camera.h"
+#include "ui.h"
+#include "http_server.h"
+#include "http_client.h"
+#include "logger.h"
+
+static httpd_handle_t camera_httpd = NULL;
+
+// ---------------- Snapshot Handler ----------------
+static esp_err_t capture_handler(httpd_req_t *req)
+{
+    camera_fb_t *fb = CAM_Capture();
+    if (!fb) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    esp_err_t res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
+
+    CAM_Dispose(fb);
+    return res;
+}
+
+// ---------------- OTA API Handler ----------------
+static esp_err_t api_ota_handler(httpd_req_t *req)
+{
+    if (req->method != HTTP_POST) {
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+
+    /* Reject if OTA already running */
+    if (HTTPC_fwUpdateInProgress()) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "OTA already in progress");
+        return ESP_FAIL;
+    }
+
+    /* Read firmware URL from POST body */
+    char firmwareUrl[512] = {0};
+    int ret = httpd_req_recv(req, firmwareUrl, sizeof(firmwareUrl) - 1);
+    if (ret <= 0) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read OTA URL");
+        return ESP_FAIL;
+    }
+    firmwareUrl[ret] = '\0';
+
+    /* Optional: get log callback URL from header */
+    char logUrl[255] = {0};
+    if (httpd_req_get_hdr_value_len(req, "X-Log-Callback") > 0) {
+        httpd_req_get_hdr_value_str(req,
+                                    "X-Log-Callback",
+                                    logUrl,
+                                    sizeof(logUrl));
+    }
+
+    /* Start OTA asynchronously */
+    HTTPC_fwUpdateRequest(
+        firmwareUrl,
+        logUrl[0] != '\0' ? logUrl : nullptr
+    );
+
+    httpd_resp_send(req, "OTA started", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+
+
+// ---------------- Index Handler ----------------
+static esp_err_t index_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, index_html, strlen_P(index_html));
+}
+
+// ---------------- Log Handler ----------------
+static esp_err_t api_logs_handler(httpd_req_t *req) {
+    static char buf[1400]; // 5 * 256 + overhead
+    LOG_get(buf, sizeof(buf));
+
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+
+// ---------------- HTTP Server Init ----------------
+void HTTP_SERVER_init()
+{
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 8;
+
+    httpd_uri_t index_uri = {
+        .uri = "/",
+        .method = HTTP_GET,
+        .handler = index_handler,
+        .user_ctx = NULL
+    };
+
+    httpd_uri_t capture_uri = {
+        .uri = "/capture",
+        .method = HTTP_GET,
+        .handler = capture_handler,
+        .user_ctx = NULL
+    };
+
+    httpd_uri_t api_ota_uri = {
+        .uri = "/api/ota",
+        .method = HTTP_POST,
+        .handler = api_ota_handler,
+        .user_ctx = NULL
+    };
+    
+    httpd_uri_t api_logs = {
+        .uri = "/api/logs",
+        .method = HTTP_GET,
+        .handler = api_logs_handler,
+        .user_ctx = NULL
+    };
+
+    if (httpd_start(&camera_httpd, &config) == ESP_OK) {
+        httpd_register_uri_handler(camera_httpd, &index_uri);
+        httpd_register_uri_handler(camera_httpd, &capture_uri);
+        httpd_register_uri_handler(camera_httpd, &api_ota_uri);
+        httpd_register_uri_handler(camera_httpd, &api_logs);
+    }
+}
