@@ -8,6 +8,7 @@
 #include "http_client.h"
 #include "logger.h"
 #include "motor.h"
+#include "distance.h"
 
 static httpd_handle_t camera_httpd = NULL;
 
@@ -15,9 +16,10 @@ static httpd_handle_t camera_httpd = NULL;
 static esp_err_t capture_handler(httpd_req_t *req)
 {
     camera_fb_t *fb = CAM_Capture();
-    if (!fb) {
+
+    if (!fb) {        
         httpd_resp_send_500(req);
-        return ESP_FAIL;
+        return ESP_FAIL;        
     }
 
     httpd_resp_set_type(req, "image/jpeg");
@@ -72,13 +74,16 @@ static esp_err_t api_ota_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-
-
-// ---------------- Index Handler ----------------
 static esp_err_t index_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, index_html, strlen_P(index_html));
+}
+
+static esp_err_t api_wiki_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, api_html, strlen_P(api_html));
 }
 
 // ---------------- Log Handler ----------------
@@ -127,6 +132,10 @@ static esp_err_t api_cmd_handler(httpd_req_t *req)
     }
     uint32_t timeLimit = timeOut + millis();
     MOTOR_setTimeout(timeLimit);
+    char resultData[256] = {0};
+    // Set initial message
+    resultData[0] = 'O';
+    resultData[1] = 'K';
 
     /* Dispatch command */
     if (strcmp(action, "grab") == 0) {
@@ -147,6 +156,10 @@ static esp_err_t api_cmd_handler(httpd_req_t *req)
     else if (strcmp(action, "right") == 0) {
         MOTOR_incrementSteerServo(20);
     }
+    else if (strcmp(action, "distance") == 0) {
+        int32_t distance = DISTANCE_get();
+        snprintf(resultData, sizeof(resultData), "%ld", distance);
+    } 
     else if (strcmp(action, "stop") == 0) {
         MOTOR_stopAll();
         return api_logs_handler(req);
@@ -157,11 +170,9 @@ static esp_err_t api_cmd_handler(httpd_req_t *req)
     }
 
     httpd_resp_set_type(req, "text/plain");
-    httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
+    httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
-
-
 
 // ---------------- HTTP Server Init ----------------
 void HTTP_SERVER_init()
@@ -204,11 +215,19 @@ void HTTP_SERVER_init()
         .user_ctx = NULL
     };
 
+    httpd_uri_t api_wiki = {
+        .uri = "/api/",
+        .method = HTTP_GET,
+        .handler = api_wiki_handler,
+        .user_ctx = NULL
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &capture_uri);
         httpd_register_uri_handler(camera_httpd, &api_ota_uri);
         httpd_register_uri_handler(camera_httpd, &api_logs);
         httpd_register_uri_handler(camera_httpd, &api_cmd);
+        httpd_register_uri_handler(camera_httpd, &api_wiki);
     }
 }

@@ -4,5 +4,5 @@
 #define HC_ECHO_PIN   3     // GPIO3 (RX)
 
 extern void DISTANCE_init(void);
-extern float DISTANCE_get(void);
+extern int32_t DISTANCE_get(void);
 

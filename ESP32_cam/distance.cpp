@@ -13,10 +13,10 @@ void DISTANCE_init()
 /*
  * Measure distance in centimeters
  * Returns:
- *   > 0 : valid distance in cm
+ *   > 0 : valid distance in mm
  *   -1  : timeout / no echo
  */
-float DISTANCE_get()
+int32_t DISTANCE_get()
 {
     // Ensure clean trigger
     digitalWrite(HC_TRIG_PIN, LOW);
@@ -36,12 +36,12 @@ float DISTANCE_get()
 
     if (duration == 0) {
         // No echo received
-        return -1.0f;
+        return -1;
     }
 
     // Speed of sound ≈ 343 m/s
-    // distance = (duration / 2) * 0.0343 cm/µs
-    float distance_cm = (duration * 0.0343f) / 2.0f;
+    // distance = (duration / 2) * 0.343 mm/µs
+    int32_t distance_cm = (int32_t)((duration * 0.343f) / 2.0f);
 
     return distance_cm;
 }
