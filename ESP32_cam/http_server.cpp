@@ -91,11 +91,11 @@ static esp_err_t api_logs_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-// ---------------- Index Handler ----------------
+// ---------------- API Handler ----------------
 static esp_err_t api_cmd_handler(httpd_req_t *req)
 {
     char query[128] = {0};
-    char action[32] = {0};
+    char action[32] = {0};    
 
     /* Extract query string */
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK) {
@@ -115,27 +115,41 @@ static esp_err_t api_cmd_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
+    /* Extract 'timeout' optional parameter */
+    char timeoutRequest[32] = {0};
+    char* endPtr;    
+    uint32_t timeOut = MOTOR_TIMEOUT;
+    if (httpd_query_key_value(query, "timeout", timeoutRequest, sizeof(timeoutRequest)) == ESP_OK){        
+        uint32_t value = strtoul(timeoutRequest, &endPtr, 10);
+        if(*endPtr == '\0'){
+            timeOut = value;
+        }        
+    }
+    uint32_t timeLimit = timeOut + millis();
+    MOTOR_setTimeout(timeLimit);
+
     /* Dispatch command */
     if (strcmp(action, "grab") == 0) {
-        MOTOR_setClawServo(SERVO_CLAW_MIN);
+        MOTOR_grabBall();
     }
     else if (strcmp(action, "release") == 0) {
         MOTOR_setClawServo(SERVO_CLAW_MAX);
     }    
     else if (strcmp(action, "fwd") == 0) {
-        MOTOR_moveToDistance(10, 600, true);
+        MOTOR_moveToDistance(10, 700, true);
     }
     else if (strcmp(action, "rev") == 0) {
-        MOTOR_moveToDistance(10, -600, true);
+        MOTOR_moveToDistance(10, -700, true);
     }
     else if (strcmp(action, "left") == 0) {
-        MOTOR_incrementSteerServo(-10);
+        MOTOR_incrementSteerServo(-20);
     }
     else if (strcmp(action, "right") == 0) {
-        MOTOR_incrementSteerServo(10);
+        MOTOR_incrementSteerServo(20);
     }
     else if (strcmp(action, "stop") == 0) {
         MOTOR_stopAll();
+        return api_logs_handler(req);
     }
     else {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid action");

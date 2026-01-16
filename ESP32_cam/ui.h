@@ -76,7 +76,7 @@ html,body{
     height:60px;
 }
 .center{
-    flex-direction:column;
+    flex-direction:column;    
 }
 .stack{
     flex-direction:column;
@@ -93,6 +93,25 @@ button:active{
     background:#ccc;
 }
 .hidden{visibility:hidden;}
+#response-log {
+    width: calc(100vw - 400px);
+    height: 52px; /* Fixed height for ~3 rows */
+    background: rgba(15, 15, 15, 0.9);
+    color: #00ff41; /* Classic Matrix/Terminal Green */
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 4px;
+    margin-top: 8px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow-y: scroll;
+    white-space: pre-line;
+    text-align: left;
+    line-height: 1.2;
+}
+#response-log::-webkit-scrollbar {
+    display: none;
+}
 </style>
 </head>
 <body>
@@ -130,6 +149,7 @@ button:active{
     <!-- CENTER: Snapshot -->
     <div class="group center">
         <button onclick="toggleSnapshots()">STREAM</button>
+        <div id="response-log">System Ready...</div>
     </div>
 
     <!-- RIGHT: Claw -->
@@ -137,55 +157,80 @@ button:active{
         <button onclick="cmdOnce('grab')">GRAB</button>
         <button onclick="cmdOnce('release')">RELEASE</button>
     </div>
+    
 </div>
 
 <script>
 let snapTimer = null;
-let cmdInterval = null; // Variable to hold the repetition timer
+let cmdActive = false; 
+const MIN_INTERVAL = 500; 
+
+function logResponse(text) {
+    const log = document.getElementById('response-log');
+    if(!log) return;
+    log.innerHTML += `> ${text}\n`;
+    log.scrollTop = log.scrollHeight;
+}
 
 function refreshImage(){
     const img = document.getElementById('cam');
-    img.onload = () => {
-        if(snapTimer){
-            setTimeout(refreshImage, 400);
-        }
-    };
+    img.onload = () => { if(snapTimer) setTimeout(refreshImage, 1000); };
     img.src = '/capture?ts=' + Date.now();
 }
 
 function toggleSnapshots(){
-    if(snapTimer){
-        snapTimer = null;
-    } else {
-        snapTimer = true;
-        refreshImage();
+    snapTimer = !snapTimer;
+    if(snapTimer) refreshImage();
+    logResponse(snapTimer ? "Stream Started" : "Stream Stopped");
+}
+
+/**
+ * RECURSIVE LOOP WITH MINIMUM DELAY
+ */
+async function runCommandLoop(action) {
+    if (!cmdActive) return;
+
+    const startTime = Date.now(); // Mark when the request started
+
+    try {
+        const response = await fetch('/api/cmd?action=' + action + '&timeout=800');
+        const data = await response.text();
+        // Optional: logResponse(action + ": " + data);
+    } catch (err) {
+        console.error("Loop error:", err);
+    } finally {
+        if (cmdActive) {
+            // Calculate how long the request actually took
+            const executionTime = Date.now() - startTime;
+            
+            // Calculate remaining time to hit the 800ms floor
+            // If executionTime was 200ms, delay is 600ms.
+            // If executionTime was 900ms, delay is 0ms.
+            const remainingDelay = Math.max(0, MIN_INTERVAL - executionTime);
+            
+            setTimeout(() => runCommandLoop(action), remainingDelay);
+        }
     }
 }
 
-// Function to start repeating a command
 function startCmd(action) {
-    if (cmdInterval) return; // Prevent multiple timers if button is mashed
-    
-    // Send the first command immediately
-    fetch('/api/cmd?action=' + action);
-    
-    // Set up the repetition every 300ms
-    cmdInterval = setInterval(() => {
-        fetch('/api/cmd?action=' + action);
-    }, 300);
+    if (cmdActive) return;
+    cmdActive = true;
+    runCommandLoop(action);
 }
 
-// Function to stop repeating and send a stop command
 function stopCmd() {
-    if (cmdInterval) {
-        clearInterval(cmdInterval);
-        cmdInterval = null;
-    }
-    fetch('/api/cmd?action=stop');
+    cmdActive = false; 
+    fetch('/api/cmd?action=stop')
+        .then(r => r.text())
+        .then(data => logResponse("Stop: " + data))
+        .catch(e => logResponse("Stop Error"));
 }
 
 function cmdOnce(action){
-    fetch('/api/cmd?action=' + action);
+    fetch('/api/cmd?action=' + action)
+        .then(r => r.text())
+        .then(data => logResponse(action.toUpperCase() + ": " + data));
 }
 </script>
 </body>

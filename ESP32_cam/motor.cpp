@@ -7,9 +7,19 @@
 // ======================================================
 
 static uint32_t lastServoUpdate = 0;
+static uint32_t cmdTimeOut = 0;
 const uint16_t SERVO_UPDATE_MS = 20;
-
 volatile uint32_t wheel_pulses = 0;
+
+enum GrabState {
+  IDLE,
+  OPENING_CLAW,
+  LOWERING_ARM,
+  GRABBING,
+  RAISING_ARM  
+};
+
+GrabState grabState = IDLE;
 
 // ---------------- Servo ----------------
 
@@ -91,6 +101,10 @@ static void servoInit(
     servoWrite(m);
 }
 
+void MOTOR_setTimeout(uint32_t timeToSet){
+    cmdTimeOut = timeToSet;
+}
+
 void MOTOR_init() {
 
     // ---- Servos ----
@@ -122,6 +136,14 @@ void MOTOR_setClawServo(int a)  { mClaw.targetAngle  = clamp(a, SERVO_CLAW_MIN, 
 void MOTOR_incrementSteerServo(int d) { MOTOR_setSteerServo(mSteer.targetAngle + d); }
 void MOTOR_incrementArmServo(int d)   { MOTOR_setArmServo(mArm.targetAngle + d); }
 void MOTOR_incrementClawServo(int d)  { MOTOR_setClawServo(mClaw.targetAngle + d); }
+
+void MOTOR_grabBall(){
+    grabState = OPENING_CLAW;   
+}
+
+void MOTOR_releaseBall(){
+    MOTOR_setClawServo(SERVO_CLAW_MAX);
+}
 
 // ======================================================
 // ==================== BLDC =============================
@@ -159,9 +181,9 @@ void MOTOR_stopAll(){
     mClaw.targetAngle = mClaw.currentAngle;
     servoWrite(mSteer);
     servoWrite(mArm);
-    servoWrite(mClaw);
+    servoWrite(mClaw); 
     moveBldc(0);
-    currentMove.active = false;
+    currentMove.active = false;    
 }
 
 // ======================================================
@@ -186,7 +208,10 @@ void MOTOR_process() {
     if (now - lastServoUpdate < SERVO_UPDATE_MS) return;
     lastServoUpdate = now;
 
-    if (currentMove.active) {
+    bool timeExpired = (cmdTimeOut > 0) && (cmdTimeOut < now );
+    if(timeExpired){
+        MOTOR_stopAll();
+    }else if (currentMove.active) {
         if (currentMove.keepDir){
             int delta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;
             if (delta) {
@@ -215,6 +240,54 @@ void MOTOR_process() {
         } else {
             moveBldc(currentMove.speed);
         }
+    }
+
+    switch(grabState){        
+        case OPENING_CLAW:
+        {
+            if(mClaw.targetAngle != SERVO_CLAW_MAX){
+                mClaw.targetAngle = SERVO_CLAW_MAX;
+            }
+            if(mClaw.currentAngle >= SERVO_CLAW_MAX )
+            {
+                grabState = LOWERING_ARM;
+            }
+        }break;
+
+        case LOWERING_ARM:
+        {
+            if(mArm.targetAngle != SERVO_ARM_MIN){
+                mArm.targetAngle = SERVO_ARM_MIN;
+            }
+            if(mArm.currentAngle <= SERVO_ARM_MIN )
+            {
+                grabState = GRABBING;
+            }
+        }break;
+
+        case GRABBING:
+        {
+            if(mClaw.targetAngle != SERVO_CLAW_MIN){
+                mClaw.targetAngle = SERVO_CLAW_MIN;
+            }
+            if(mClaw.currentAngle <= SERVO_CLAW_MIN )
+            {
+                grabState = RAISING_ARM;
+            }
+        }break;
+
+        case RAISING_ARM:
+        {
+            if(mArm.targetAngle != SERVO_ARM_MAX){
+                mArm.targetAngle = SERVO_ARM_MAX;
+            }
+            if(mArm.currentAngle >= SERVO_ARM_MAX )
+            {
+                grabState = IDLE;
+            }
+        }break;
+
+        default:  break;
     }
 
     processServo(mSteer, SERVO_STEER_MIN, SERVO_STEER_MAX);
