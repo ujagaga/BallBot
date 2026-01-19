@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "distance.h"
-/* HC-SR04 ultrasound module distance mesuring functions */
+
+#ifdef USE_ULTRASOUND
 
 void DISTANCE_init()
 {
@@ -11,7 +12,7 @@ void DISTANCE_init()
 }
 
 /*
- * Measure distance in centimeters
+ * Measure distance in millimeters
  * Returns:
  *   > 0 : valid distance in mm
  *   -1  : timeout / no echo
@@ -45,3 +46,42 @@ int32_t DISTANCE_get()
 
     return distance_cm;
 }
+
+#else
+
+#include <Wire.h>
+#include <VL53L1X.h>
+
+VL53L1X sensor;
+
+static bool initialized = false;
+
+void DISTANCE_init()
+{
+    if (!Wire.begin(I2C_SDA, I2C_SCL)) {
+        return;
+    }
+
+    sensor.setTimeout(500);
+    if (!sensor.init()) {
+        return;
+    }
+
+    // Configure for maximum range (4 meters)
+    sensor.setDistanceMode(VL53L1X::Long);
+    // 50ms timing budget for a good balance of speed and accuracy
+    sensor.setMeasurementTimingBudget(50000);
+    
+    initialized = true;
+}
+
+int32_t DISTANCE_get()
+{
+    if(initialized){
+        sensor.readSingle();
+        return ((int32_t)sensor.read());
+    }
+    return -1;
+}
+
+#endif
