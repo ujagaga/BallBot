@@ -60,7 +60,7 @@ static inline void servoWrite(const ServoMotor &m) {
     ledcWrite(m.pin, angleToDuty(m.currentAngle));
 }
 
-static uint32_t get_pulses() {
+uint32_t get_pulses() {
     noInterrupts();
     uint32_t p = wheel_pulses;
     interrupts();
@@ -121,8 +121,8 @@ void MOTOR_init() {
     ledcWrite(BLDC_SPEED_PIN, 0);
 
     // ---- Tacho ---- Does not work
-    // pinMode(BLDC_TAHO_PIN, INPUT_PULLUP);
-    // attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
+    pinMode(BLDC_TAHO_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(BLDC_TAHO_PIN), wheel_isr, FALLING);
 }
 
 // ======================================================
@@ -212,7 +212,11 @@ void MOTOR_process() {
     if(timeExpired){
         MOTOR_stopAll();
     }else if (currentMove.active) {
-        if (currentMove.keepDir){
+        uint32_t pulses = get_pulses();        
+
+        if (currentMove.keepDir && pulses != currentMove.lastProcessedPuls) {
+            currentMove.lastProcessedPuls = pulses;
+
             int delta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;
             if (delta) {
                 int step = min(abs(delta), STEERING_PER_PULSE);
@@ -220,19 +224,6 @@ void MOTOR_process() {
                                      ((delta > 0) ? step : -step);
             }
         }
-
-        uint32_t pulses = get_pulses();
-
-        // if (currentMove.keepDir && pulses != currentMove.lastProcessedPuls) {
-        //     currentMove.lastProcessedPuls = pulses;
-
-        //     int delta = STEERING_STRAIGHT_ANGLE - mSteer.currentAngle;
-        //     if (delta) {
-        //         int step = min(abs(delta), STEERING_PER_PULSE);
-        //         mSteer.targetAngle = mSteer.currentAngle +
-        //                              ((delta > 0) ? step : -step);
-        //     }
-        // }
 
         if (pulses >= currentMove.targetPulses) {
             moveBldc(0);

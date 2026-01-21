@@ -145,10 +145,10 @@ static esp_err_t api_cmd_handler(httpd_req_t *req)
         MOTOR_setClawServo(SERVO_CLAW_MAX);
     }    
     else if (strcmp(action, "fwd") == 0) {
-        MOTOR_moveToDistance(10, 700, true);
+        MOTOR_moveToDistance(10, 300, true);
     }
     else if (strcmp(action, "rev") == 0) {
-        MOTOR_moveToDistance(10, -700, true);
+        MOTOR_moveToDistance(10, -300, true);
     }
     else if (strcmp(action, "left") == 0) {
         MOTOR_incrementSteerServo(-20);
