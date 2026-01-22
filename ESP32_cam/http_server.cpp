@@ -139,26 +139,46 @@ static esp_err_t api_cmd_handler(httpd_req_t *req)
 
     /* Dispatch command */
     if (strcmp(action, "grab") == 0) {
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
         MOTOR_grabBall();
+        return ESP_OK;
     }
     else if (strcmp(action, "release") == 0) {
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
         MOTOR_setClawServo(SERVO_CLAW_MAX);
+        return ESP_OK;
     }    
     else if (strcmp(action, "fwd") == 0) {
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
         MOTOR_moveToDistance(10, 300, true);
+        return ESP_OK;
     }
     else if (strcmp(action, "rev") == 0) {
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
         MOTOR_moveToDistance(10, -300, true);
+        return ESP_OK;
     }
     else if (strcmp(action, "left") == 0) {
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
         MOTOR_incrementSteerServo(-20);
+        return ESP_OK;
     }
     else if (strcmp(action, "right") == 0) {
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
         MOTOR_incrementSteerServo(20);
+        return ESP_OK;
     }
     else if (strcmp(action, "distance") == 0) {
         int32_t distance = DISTANCE_get();
         snprintf(resultData, sizeof(resultData), "%ld", distance);
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, resultData, HTTPD_RESP_USE_STRLEN);
     } 
     else if (strcmp(action, "stop") == 0) {
         MOTOR_stopAll();
