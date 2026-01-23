@@ -1,15 +1,14 @@
-// camera.cpp
-#include <Arduino.h>
-#include "camera.h"
+#include "esp_camera.h"
+#include <WiFi.h>
+#include "camera_pins.h"
+#include "wifi_connection.h"
 
-static bool camInitialized = false;
+// const char *ssid = "**********";
+// const char *password = "**********";
 
-void CAM_Init(){
-  if (camInitialized) {
-    CAM_Stop();  // ensure previous instance is deinitialized
-  }
+void startCameraServer();
 
-  // Camera config
+void setup() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -29,32 +28,36 @@ void CAM_Init(){
   config.pin_sccb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 10000000;
+  config.xclk_freq_hz = 20000000;
   config.frame_size = FRAMESIZE_SVGA;
-  config.pixel_format = PIXFORMAT_JPEG;  
+  config.pixel_format = PIXFORMAT_JPEG;  // for streaming
   config.grab_mode = CAMERA_GRAB_LATEST;
   config.fb_location = CAMERA_FB_IN_PSRAM;
   config.jpeg_quality = 12;
-  config.fb_count = 2;
-  
-  camInitialized = (esp_camera_init(&config) == ESP_OK); 
+  config.fb_count = 1;
+
+  // camera init
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    return;
+  }
+
+  WIFIC_init();
+
+  // WiFi.begin(ssid, password);
+  // WiFi.setSleep(false);
+
+  // Serial.print("WiFi connecting");
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   delay(500);
+  //   Serial.print(".");
+  // }
+
+
+  startCameraServer();  
 }
 
-camera_fb_t* CAM_Capture() {
-  return esp_camera_fb_get();    
-}
-
-void CAM_Dispose(camera_fb_t* fb){
-  esp_camera_fb_return(fb);
-} 
-
-bool CAM_isInitialized(){
-  return camInitialized;
-}
-
-void CAM_Stop() {
-    if (camInitialized) {
-        esp_camera_deinit();
-        camInitialized = false;
-    }
+void loop() {
+  // Do nothing. Everything is done in another task by the web server
+  delay(10000);
 }

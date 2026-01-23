@@ -116,7 +116,7 @@ button:active{
 </head>
 <body>
 
-<img id="cam" src="/capture">
+<img id="cam" src="">
 <a id="api-link" href="/api/">?</a>
 
 <div id="controls">
@@ -126,34 +126,42 @@ button:active{
             <div></div>
             <button 
                 onmousedown="startCmd('fwd')" onmouseup="stopCmd()" 
-                ontouchstart="startCmd('fwd')" ontouchend="stopCmd()">FWD</button>
+                ontouchstart="event.preventDefault(); startCmd('fwd')" ontouchend="stopCmd()">FWD</button>
             <div></div>
 
             <button 
                 onmousedown="startCmd('left')" onmouseup="stopCmd()" 
-                ontouchstart="startCmd('left')" ontouchend="stopCmd()">LEFT</button>
+                ontouchstart="event.preventDefault(); startCmd('left')" ontouchend="stopCmd()">LEFT</button>
             <div></div>
             <button 
                 onmousedown="startCmd('right')" onmouseup="stopCmd()" 
-                ontouchstart="startCmd('right')" ontouchend="stopCmd()">RIGHT</button>
+                ontouchstart="event.preventDefault(); startCmd('right')" ontouchend="stopCmd()">RIGHT</button>
 
             <div></div>            
             <button 
                 onmousedown="startCmd('rev')" onmouseup="stopCmd()" 
-                ontouchstart="startCmd('rev')" ontouchend="stopCmd()">REV</button>
+                ontouchstart="event.preventDefault(); startCmd('rev')" ontouchend="stopCmd()">REV</button>
             <div></div>
         </div>
         <div id="response-log"></div>
     </div>
 
-    <div class="group stack">
-        <button onclick="toggleSnapshots()">STREAM</button>
-        <button onclick="cmdOnce('distance')">MEASURE</button>
+    <div class="group stack">        
+        <button 
+            onclick="cmdOnce('distance')"
+            ontouchstart="event.preventDefault(); cmdOnce('distance')"
+        >MEASURE</button>
     </div>
 
     <div class="group stack">
-        <button onclick="cmdOnce('grab')">GRAB</button>
-        <button onclick="cmdOnce('release')">RELEASE</button>
+        <button 
+            onclick="cmdOnce('grab')"
+            ontouchstart="event.preventDefault(); cmdOnce('grab')"
+        >GRAB</button>
+        <button 
+            onclick="cmdOnce('release')"
+            ontouchstart="event.preventDefault(); cmdOnce('release')"
+        >RELEASE</button>
     </div>
     
 </div>
@@ -163,6 +171,10 @@ let snapTimer = null;
 let cmdActive = false; 
 const MIN_INTERVAL = 500; 
 
+// Detect the current IP and point the stream to port 81
+const streamUrl = "http://" + window.location.hostname + ":81/stream";
+document.getElementById('cam').src = streamUrl;
+
 function logResponse(text) {
     const log = document.getElementById('response-log');
     if(!log) return;
@@ -170,45 +182,6 @@ function logResponse(text) {
     log.scrollTop = log.scrollHeight;
 }
 
-function refreshImage() {
-    if (!snapTimer) return; // Exit if the stream was turned off
-
-    const img = document.getElementById('cam');
-    const startTime = Date.now();
-
-    // 1. Define what happens when the image SUCCESSFULLY arrives
-    img.onload = () => {
-        console.log(`Image loaded in ${Date.now() - startTime}ms`);
-        // Only schedule the next one if we are still in "snapTimer" mode
-        if (snapTimer) {
-            setTimeout(refreshImage, 1000); // 1 second gap AFTER download finishes
-        }
-    };
-
-    // 2. Define what happens if the image FAILS (important!)
-    img.onerror = () => {
-        console.error("Image failed to load. Retrying in 2 seconds...");
-        if (snapTimer) {
-            setTimeout(refreshImage, 2000); // Wait a bit longer before retrying
-        }
-    };
-
-    // 3. Trigger the request
-    img.src = '/capture?ts=' + Date.now();
-}
-
-function toggleSnapshots() {
-    // If it was off, turn it on and kick off the first request
-    if (!snapTimer) {
-        snapTimer = true;
-        logResponse("Stream Started");
-        refreshImage();
-    } else {
-        // If it was on, turn it off (the onload check will stop the loop)
-        snapTimer = false;
-        logResponse("Stream Stopped");
-    }
-}
 
 async function runCommandLoop(action) {
     if (!cmdActive) return;

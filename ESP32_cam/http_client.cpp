@@ -4,7 +4,7 @@
 #include <HTTPUpdate.h>
 #include "camera.h"
 #include "logger.h"
-
+#include "http_server.h"
 
 static bool fwUpdateInProgress = false; 
 static bool fwUpdateRequested = false;
@@ -72,7 +72,7 @@ void HTTPC_fwUpdate(){
 
     if (fwUpdateInProgress) {
         return;
-    }
+    }    
 
     fwUpdateInProgress = true;    
 
@@ -83,6 +83,9 @@ void HTTPC_fwUpdate(){
         CAM_Stop();
         delay(100);
     }
+
+    sendLog("Disabling HTTP servers");
+    HTTP_SERVER_stop();
 
     uint32_t freeHeap = ESP.getFreeHeap();
     if (freeHeap < 60 * 1024) {
