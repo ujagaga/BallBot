@@ -1,63 +1,26 @@
 #include "esp_camera.h"
 #include <WiFi.h>
-#include "camera_pins.h"
+#include "camera.h"
 #include "wifi_connection.h"
+#include "http_server.h"
+#include "http_client.h"
+#include "distance.h"
+#include "motor.h"
 
-// const char *ssid = "**********";
-// const char *password = "**********";
-
-void startCameraServer();
-
-void setup() {
-  camera_config_t config;
-  config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer = LEDC_TIMER_0;
-  config.pin_d0 = Y2_GPIO_NUM;
-  config.pin_d1 = Y3_GPIO_NUM;
-  config.pin_d2 = Y4_GPIO_NUM;
-  config.pin_d3 = Y5_GPIO_NUM;
-  config.pin_d4 = Y6_GPIO_NUM;
-  config.pin_d5 = Y7_GPIO_NUM;
-  config.pin_d6 = Y8_GPIO_NUM;
-  config.pin_d7 = Y9_GPIO_NUM;
-  config.pin_xclk = XCLK_GPIO_NUM;
-  config.pin_pclk = PCLK_GPIO_NUM;
-  config.pin_vsync = VSYNC_GPIO_NUM;
-  config.pin_href = HREF_GPIO_NUM;
-  config.pin_sccb_sda = SIOD_GPIO_NUM;
-  config.pin_sccb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn = PWDN_GPIO_NUM;
-  config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_SVGA;
-  config.pixel_format = PIXFORMAT_JPEG;  // for streaming
-  config.grab_mode = CAMERA_GRAB_LATEST;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 12;
-  config.fb_count = 1;
-
-  // camera init
-  esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
-    return;
-  }
-
-  WIFIC_init();
-
-  // WiFi.begin(ssid, password);
-  // WiFi.setSleep(false);
-
-  // Serial.print("WiFi connecting");
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(500);
-  //   Serial.print(".");
-  // }
-
-
-  startCameraServer();  
+void setup() {     
+  DISTANCE_init();
+  MOTOR_init();
+  // Do not edit past this point to avoid camera init failure 
+  CAM_Init(); 
+  WIFIC_init();  
+  HTTPSRV_init();  
 }
 
 void loop() {
-  // Do nothing. Everything is done in another task by the web server
-  delay(10000);
+  if(!HTTPC_fwUpdateInProgress()) {
+    MOTOR_process();    
+  }
+  HTTPC_process(); 
+  // 10ms minimum delay to allow camera to sample image
+  delay(40);
 }

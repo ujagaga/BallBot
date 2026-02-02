@@ -1,0 +1,10 @@
+{
+  "additionalFiles": "../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..",
+  "builtInLibrariesFolders": "/home/rada/.arduino15/libraries",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "build.warn_data_percentage=75",
+  "fqbn": "esp32:esp32:esp32cam:CPUFreq=240,FlashFreq=80,FlashMode=qio,PartitionScheme=min_spiffs,DebugLevel=none,EraseFlash=none",
+  "hardwareFolders": "/home/rada/.arduino15/packages",
+  "otherLibrariesFolders": "/home/rada/Arduino/libraries",
+  "sketchLocation": "/home/rada/Projects/BallBot/CameraWebServer"
+}
