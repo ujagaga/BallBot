@@ -1,15 +1,10 @@
 // camera.cpp
-#include <Arduino.h>
+// #include <Arduino.h>
 #include "camera.h"
 
 static bool camInitialized = false;
 
-void CAM_Init(){
-  if (camInitialized) {
-    CAM_Stop();  // ensure previous instance is deinitialized
-  }
-
-  // Camera config
+void CAM_Init(){ 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -29,15 +24,15 @@ void CAM_Init(){
   config.pin_sccb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 10000000;
+  config.xclk_freq_hz = 20000000;
   config.frame_size = FRAMESIZE_SVGA;
-  config.pixel_format = PIXFORMAT_JPEG;  
-  config.grab_mode = CAMERA_GRAB_LATEST;
+  config.pixel_format = PIXFORMAT_JPEG; 
+  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
   config.jpeg_quality = 12;
   config.fb_count = 2;
   
-  camInitialized = (esp_camera_init(&config) == ESP_OK); 
+  camInitialized = (esp_camera_init(&config) == ESP_OK);
 }
 
 camera_fb_t* CAM_Capture() {
@@ -57,4 +52,15 @@ void CAM_Stop() {
         esp_camera_deinit();
         camInitialized = false;
     }
+}
+
+void CAM_preset(){
+  if (camInitialized) {
+    sensor_t *s = esp_camera_sensor_get();
+    s->set_gainceiling(s, GAINCEILING_16X);
+    s->set_lenc(s, 1);
+    s->set_wpc(s, 1);
+    s->set_bpc(s, 1);
+    s->set_wb_mode(s, 3);
+  }
 }

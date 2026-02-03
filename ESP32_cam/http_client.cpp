@@ -3,8 +3,8 @@
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
 #include "camera.h"
-#include "logger.h"
 #include "http_server.h"
+#include "http_client.h"
 
 static bool fwUpdateInProgress = false; 
 static bool fwUpdateRequested = false;
@@ -85,7 +85,7 @@ void HTTPC_fwUpdate(){
     }
 
     sendLog("Disabling HTTP servers");
-    HTTP_SERVER_stop();
+    HTTPSRV_stop();
 
     uint32_t freeHeap = ESP.getFreeHeap();
     if (freeHeap < 60 * 1024) {
@@ -104,13 +104,14 @@ void HTTPC_fwUpdate(){
             sendLog("No Update");
             break;
         case HTTP_UPDATE_OK:
-            sendLog("Update OK"); // May not print as it reboots automatically
+            sendLog("Update OK"); 
             break;
     }
 
     fwUpdateInProgress = false;
     _logCallbackUrl[0] = '\0';
-    CAM_Init();
+    delay(1000);
+    ESP.restart();
 }
 
 

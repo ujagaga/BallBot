@@ -32,4 +32,7 @@ The only requirement is `pip install requests`
 - The Firmware update python file is OK
 - working on ESP32 HTTP server UI
 
+## WARNING
+The WiFi AP causes a lot of electrical noise, so the camera tends to freeze due to processing errors. To prevent it, make sure you have a module with an antenna, which you place on the side, behind the camera and glue the camera to the SD card slot to allow it to shield it.
+
 ![3D Preview](Screenshot.png)

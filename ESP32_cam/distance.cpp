@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "distance.h"
 
+
 #ifdef USE_ULTRASOUND
 
 void DISTANCE_init()
@@ -8,7 +9,7 @@ void DISTANCE_init()
     pinMode(HC_TRIG_PIN, OUTPUT);
     pinMode(HC_ECHO_PIN, INPUT);
 
-    digitalWrite(HC_TRIG_PIN, LOW);
+    digitalWrite(HC_TRIG_PIN, LOW); 
 }
 
 /*
@@ -62,6 +63,8 @@ void DISTANCE_init()
         return;
     }
 
+    Wire.setClock(400000);
+
     sensor.setTimeout(500);
     if (!sensor.init()) {
         return;
@@ -78,8 +81,11 @@ void DISTANCE_init()
 int32_t DISTANCE_get()
 {
     if(initialized){
-        sensor.readSingle();
-        return ((int32_t)sensor.read());
+        int32_t result = (int32_t)sensor.readSingle();
+        if (sensor.timeoutOccurred()) {
+            return -1;
+        }
+        return result;
     }
     return -1;
 }
