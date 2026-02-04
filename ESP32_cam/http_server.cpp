@@ -282,18 +282,15 @@ static esp_err_t command_handler(httpd_req_t *req) {
   }else if (!strcmp(action, "release")) {
     MOTOR_setClawServo(SERVO_CLAW_MAX);
   }else if (strcmp(action, "fwd") == 0) {
-    MOTOR_moveToDistance(10, 300, true);
+    MOTOR_moveToDistance(6, 200, true);
   }else if (strcmp(action, "rev") == 0) {    
-    MOTOR_moveToDistance(10, -300, true);     
+    MOTOR_moveToDistance(6, -200, true);     
   }else if (strcmp(action, "left") == 0) {    
     MOTOR_incrementSteerServo(-20);
   }else if (strcmp(action, "right") == 0) {    
     MOTOR_incrementSteerServo(20);
   }else if (strcmp(action, "stop") == 0) {
-    uint32_t pulses = MOTOR_stopAll();
-    char resultData[10] = {0};    
-    int dataLen = snprintf(resultData, sizeof(resultData) - 1, "%ld", pulses);    
-    return httpd_resp_send(req, resultData, dataLen + 1);
+    MOTOR_stopAll();
   }
   else {
     response = -1;

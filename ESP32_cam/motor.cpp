@@ -161,12 +161,11 @@ static void moveBldc(int speed) {
 }
 
 void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection) {
-
     noInterrupts();
-    wheel_pulses = 0;
+    uint32_t oldPulses = wheel_pulses;
     interrupts();
 
-    currentMove.targetPulses = pulses;
+    currentMove.targetPulses = oldPulses + pulses;
     currentMove.lastProcessedPuls = 0;
     currentMove.speed = speed;
     currentMove.keepDir = keepDirection;
@@ -175,8 +174,7 @@ void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection) {
     moveBldc(speed);
 }
 
-uint32_t MOTOR_stopAll(){
-    uint32_t pulses = wheel_pulses;
+void MOTOR_stopAll(){
     mSteer.targetAngle = mSteer.currentAngle;
     mArm.targetAngle = mArm.currentAngle;
     mClaw.targetAngle = mClaw.currentAngle;
@@ -185,7 +183,6 @@ uint32_t MOTOR_stopAll(){
     servoWrite(mClaw); 
     moveBldc(0);
     currentMove.active = false;   
-    return pulses; 
 }
 
 // ======================================================

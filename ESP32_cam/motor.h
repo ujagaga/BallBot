@@ -18,8 +18,8 @@
 #define SERVO_ARM_MIN             (45)
 #define SERVO_ARM_MAX             (140)
 
-#define STEERING_STRAIGHT_ANGLE   (82)
-#define STEERING_PER_PULSE        (20)
+#define STEERING_STRAIGHT_ANGLE   (85)
+#define STEERING_PER_PULSE        (30)
 
 #define SERVO_PWM_FREQ            (50)
 #define SERVO_PWM_RES             (16)
@@ -39,7 +39,7 @@ extern void MOTOR_setClawServo(int angle);
 extern void MOTOR_incrementSteerServo(int angle);
 extern void MOTOR_incrementArmServo(int angle);
 extern void MOTOR_incrementClawServo(int angle);
-extern uint32_t MOTOR_stopAll(void);
+extern void MOTOR_stopAll(void);
 extern void MOTOR_process(void);
 extern void MOTOR_setTimeout(uint32_t timeToSet);
 extern void MOTOR_moveToDistance(uint32_t pulses, int speed, bool keepDirection);

@@ -21,6 +21,4 @@ void loop() {
     MOTOR_process();    
   }
   HTTPC_process(); 
-  // 10ms minimum delay to allow camera to sample image
-  delay(40);
 }

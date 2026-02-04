@@ -567,7 +567,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
   const show = el => el && el.classList.remove('hidden');
   const hide = el => el && el.classList.add('hidden');
 
-  // --- CORE MOVEMENT LOGIC ---
   const sendAction = async (action) => {
     const query = `${baseHost}/command?action=${action}`;
     try {
@@ -582,11 +581,11 @@ document.addEventListener('DOMContentLoaded', function (event) {
   const moveLoop = async (action) => {
     if (!isMoving) return;
     
-    await sendAction(action); // Wait for result
+    await sendAction(action); 
     
     moveTimeout = setTimeout(() => {
-      moveLoop(action); // Recursive call after 500ms delay
-    }, 500);
+      moveLoop(action); 
+    }, 300);
   };
 
   const startMoving = (action) => {
