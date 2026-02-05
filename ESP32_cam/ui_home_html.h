@@ -629,7 +629,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   
   streamButton.onclick = () => {
     if (streamButton.innerHTML === 'Stop Stream') {
-      window.stop();
+      view.src = "";
       streamButton.innerHTML = 'Start Stream';
     } else {
       view.src = `${streamUrl}/stream`;
@@ -641,7 +641,9 @@ document.addEventListener('DOMContentLoaded', function (event) {
   function updateConfig(el) {
     let value = (el.type === 'checkbox') ? (el.checked ? 1 : 0) : el.value;
     const query = `${baseHost}/config?var=${el.id}&val=${value}`;
-    fetch(query).then(r => console.log(`Config ${el.id} updated`));
+    fetch(query)
+      .then(r => console.log(`Config ${el.id} updated`))
+      .catch(e => console.log(`Config ${el.id} failed: ${e}`));
   }
 
   document.querySelectorAll('.default-action').forEach(el => {

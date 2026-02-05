@@ -1,10 +1,10 @@
 // camera.cpp
-// #include <Arduino.h>
-#include "camera.h"
+#include <Arduino.h>
+#include <camera.h>
 
 static bool camInitialized = false;
 
-void CAM_Init(){ 
+void CAM_Init() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -26,35 +26,29 @@ void CAM_Init(){
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.frame_size = FRAMESIZE_SVGA;
-  config.pixel_format = PIXFORMAT_JPEG; 
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  config.pixel_format = PIXFORMAT_JPEG;
+  config.grab_mode = CAMERA_GRAB_LATEST;
   config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 12;
+  config.jpeg_quality = 10;
   config.fb_count = 2;
-  
+
   camInitialized = (esp_camera_init(&config) == ESP_OK);
 }
 
-camera_fb_t* CAM_Capture() {
-  return esp_camera_fb_get();    
-}
+camera_fb_t *CAM_Capture() { return esp_camera_fb_get(); }
 
-void CAM_Dispose(camera_fb_t* fb){
-  esp_camera_fb_return(fb);
-} 
+void CAM_Dispose(camera_fb_t *fb) { esp_camera_fb_return(fb); }
 
-bool CAM_isInitialized(){
-  return camInitialized;
-}
+bool CAM_isInitialized() { return camInitialized; }
 
 void CAM_Stop() {
-    if (camInitialized) {
-        esp_camera_deinit();
-        camInitialized = false;
-    }
+  if (camInitialized) {
+    esp_camera_deinit();
+    camInitialized = false;
+  }
 }
 
-void CAM_preset(){
+void CAM_preset() {
   if (camInitialized) {
     sensor_t *s = esp_camera_sensor_get();
     s->set_gainceiling(s, GAINCEILING_16X);
