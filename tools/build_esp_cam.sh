@@ -11,5 +11,12 @@ SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 
 cd $SCRIPT_DIR
 rm -rf ../build
+
+# Copy custom partition table to Arduino package directory
+PARTITION_DIR="$HOME/.arduino15/packages/esp32/hardware/esp32/3.3.6/tools/partitions"
+cp partitions.csv "$PARTITION_DIR/custom.csv"
+
 echo "Building ESP32_cam"
-/usr/local/bin/arduino-cli compile --fqbn esp32:esp32:esp32cam --build-path ../build --build-property "build.partitions=custom" --build-property "build.custom_partitions=../tools/partitions.csv" ../ESP32_cam
+/usr/local/bin/arduino-cli compile --fqbn esp32:esp32:esp32cam \
+--build-path ../build \
+--build-property "build.partitions=custom" ../ESP32_cam

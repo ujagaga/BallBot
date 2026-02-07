@@ -26,7 +26,11 @@ There is an /api/ota endpoint to which you need to make a post request to trigge
 
 The only requirement is `pip install requests`
 
-I prepared other helper scripts to build and upload the image, but uploading does not seem to produce a stable image like the Arduino IDE uploader does.
+The dafult available partition schemes were not suitable for this process, so I created a custom one. You can find it at:
+
+        tools/partitions.csv
+
+You only need to upload the image once via USB to adjust the partition scheme. After that you can use the WiFi update mechanism which only sends the application image to the ESP32, so the partition scheme needs to be correctly pre-defined and will not be changed by the WiFi upload process.
 
 ## WARNING
 The WiFi AP causes a lot of electrical noise, so the camera tends to freeze due to processing errors. To prevent it, make sure you have a module with an antenna, which you place on the side, behind the camera and glue the camera to the SD card slot to allow it to shield it.
