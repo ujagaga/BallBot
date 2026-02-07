@@ -39,7 +39,7 @@ There is an /api/ota endpoint to which you need to make a post request to trigge
 
 The only requirement is `pip install requests`
 
-The dafult available partition schemes were not suitable for this process, so I created a custom one. You can find it at:
+The partition scheme you will need is one with OTA. Just in case you need it, you can find it at:
 
         tools/partitions.csv
 

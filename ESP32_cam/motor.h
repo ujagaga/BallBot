@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #define SERVO_STEER_PIN (15)
 #define SERVO_CLAW_PIN (13)
 #define SERVO_ARM_PIN (14)
@@ -8,8 +9,8 @@
 #define BLDC_TAHO_PIN (4)
 
 #define SERVO_STEER_SPEED (3)
-#define SERVO_CLAW_SPEED (4)
-#define SERVO_ARM_SPEED (5)
+#define SERVO_CLAW_SPEED (5)
+#define SERVO_ARM_SPEED (6)
 
 #define SERVO_STEER_MIN (12)
 #define SERVO_STEER_MAX (160)

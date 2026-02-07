@@ -266,10 +266,10 @@ static esp_err_t process_motor_command(const char *action, char *response_msg) {
     MOTOR_moveToDistance(1000, -200, true);
     strcpy(response_msg, "OK");
   } else if (strcmp(action, "left") == 0) {
-    MOTOR_incrementSteerServo(-90);
+    MOTOR_incrementSteerServo(-180);
     strcpy(response_msg, "OK");
   } else if (strcmp(action, "right") == 0) {
-    MOTOR_incrementSteerServo(90);
+    MOTOR_incrementSteerServo(180);
     strcpy(response_msg, "OK");
   } else if (strcmp(action, "stop") == 0) {
     MOTOR_stopAll();

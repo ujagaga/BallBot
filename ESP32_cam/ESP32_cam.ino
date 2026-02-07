@@ -18,5 +18,6 @@ void loop() {
     MOTOR_process();
   }
   HTTPC_process();
-  delay(20);
+
+  delay(50); // less than 40 will freeze the camera
 }
