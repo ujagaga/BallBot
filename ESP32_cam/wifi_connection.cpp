@@ -36,7 +36,7 @@ int chooseBestChannel() {
   return bestChannel;
 }
 
-static void setup_ap() {
+void setup_ap() {
   int channel = chooseBestChannel();
   WiFi.mode(WIFI_AP);
   WiFi.setSleep(false);
@@ -48,7 +48,7 @@ static void setup_ap() {
   WiFi.softAP(WIFI_SSID, WIFI_PASS, channel);
 }
 
-static void setup_station() {
+void setup_station() {
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
   esp_wifi_set_ps(WIFI_PS_NONE);

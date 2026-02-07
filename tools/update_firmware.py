@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+"""
+Helper script for uploading firmware via WiFi to ESP32.
+
+Usage:
+./update_firmware.py /path/to/firmware.bin
+
+Requirements:   
+pip3 install requests
+"""
+
 import argparse
 import http.server
 import socket
@@ -10,28 +20,27 @@ import sys
 import os
 import time
 
-ESP32_OTA_URL = "http://192.168.4.1/api/ota"
+ESP32_OTA_PORT = 80
 SERVER_PORT = 8000
 
 
 # ---------------- IP Detection ----------------
 
-def get_local_ap_ip():
+def get_local_ip(target_ip):
     """
-    Detect local IP in 192.168.4.0/24
+    Detect local IP by connecting to the target ESP32 IP.
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s.connect(("192.168.4.1", 80))
+        s.connect((target_ip, ESP32_OTA_PORT))
         ip = s.getsockname()[0]
-        if ip.startswith("192.168.4."):
-            return ip
+        return ip
     except Exception:
         pass
     finally:
         s.close()
 
-    raise RuntimeError("No local IP found in 192.168.4.x subnet")
+    raise RuntimeError(f"Could not determine local IP to reach {target_ip}")
 
 
 # ---------------- HTTP Server ----------------
@@ -105,16 +114,18 @@ def start_http_server(bind_ip, firmware_path):
 
 # ---------------- OTA Trigger ----------------
 
-def trigger_ota(host_ip):
+def trigger_ota(host_ip, target_ip):
     firmware_url = f"http://{host_ip}:{SERVER_PORT}/firmware"
     log_url = f"http://{host_ip}:{SERVER_PORT}/log"
+    esp32_url = f"http://{target_ip}/api/ota"
 
     print("[OTA] Triggering OTA")
+    print("[OTA] Target ESP32 URL:", esp32_url)
     print("[OTA] Firmware URL:", firmware_url)
     print("[OTA] Log URL:", log_url)
 
     response = requests.post(
-        ESP32_OTA_URL,
+        esp32_url,
         data=firmware_url,
         headers={
             "X-Log-Callback": log_url
@@ -130,20 +141,23 @@ def trigger_ota(host_ip):
 def main():
     parser = argparse.ArgumentParser(description="ESP32 OTA push tool")
     parser.add_argument("firmware", help="Path to firmware binary")
+    parser.add_argument("--ip", required=True, help="Target ESP32 IP address")
     args = parser.parse_args()
 
     firmware_path = os.path.abspath(args.firmware)
+    target_ip = args.ip
 
     if not os.path.isfile(firmware_path):
         print("Firmware file not found:", firmware_path)
         sys.exit(1)
 
     try:
-        host_ip = get_local_ap_ip()
+        host_ip = get_local_ip(target_ip)
     except RuntimeError as e:
         print(e)
         sys.exit(1)
 
+    print("[INFO] Target IP:", target_ip)
     print("[INFO] Host IP:", host_ip)
     print("[INFO] Firmware:", firmware_path)
 
@@ -156,7 +170,7 @@ def main():
     time.sleep(1)
 
     try:
-        trigger_ota(host_ip)
+        trigger_ota(host_ip, target_ip)
     except Exception as e:
         print("[OTA] Failed:", e)
         sys.exit(1)
