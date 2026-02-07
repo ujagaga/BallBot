@@ -401,10 +401,6 @@ input.toggle-section-button:checked+section.toggle-section {
     <div class="input-group" id="framesize-group">
         <label for="framesize">Resolution</label>
         <select id="framesize" class="default-action">
-            <!-- 2MP -->
-            <option value="15">UXGA(1600x1200)</option>
-            <option value="14">SXGA(1280x1024)</option>
-            <option value="13">HD(1280x720)</option>
             <option value="12">XGA(1024x768)</option>
             <option value="11">SVGA(800x600)</option>
             <option value="10">VGA(640x480)</option>
@@ -649,6 +645,78 @@ document.addEventListener('DOMContentLoaded', function (event) {
   document.querySelectorAll('.default-action').forEach(el => {
     el.onchange = () => updateConfig(el);
   });
+
+  // Read initial values
+  fetch(`${baseHost}/status`)
+    .then(function (response) {
+      return response.json()
+    })
+    .then(function (state) {
+      document
+        .querySelectorAll('.default-action')
+        .forEach(el => {
+          updateValue(el, state[el.id], false)
+        })
+    })
+
+  // Custom actions
+  // Gain
+  const agc = document.getElementById('agc')
+  const agcGain = document.getElementById('agc_gain-group')
+  const gainCeiling = document.getElementById('gainceiling-group')
+  agc.onchange = () => {
+    updateConfig(agc)
+    if (agc.checked) {
+      show(gainCeiling)
+      hide(agcGain)
+    } else {
+      hide(gainCeiling)
+      show(agcGain)
+    }
+  }
+
+  // Exposure
+  const aec = document.getElementById('aec')
+  const exposure = document.getElementById('aec_value-group')
+  aec.onchange = () => {
+    updateConfig(aec)
+    aec.checked ? hide(exposure) : show(exposure)
+  }
+
+  // Detection and framesize
+  const framesize = document.getElementById('framesize')
+  framesize.onchange = () => {
+    updateConfig(framesize)
+  }
+
+  const updateValue = (el, value, updateRemote) => {
+    updateRemote = updateRemote == null ? true : updateRemote
+    let initialValue
+    if (el.type === 'checkbox') {
+      initialValue = el.checked
+      value = !!value
+      el.checked = value
+    } else {
+      initialValue = el.value
+      el.value = value
+    }
+
+    if (updateRemote && initialValue !== value) {
+      updateConfig(el);
+    } else if(!updateRemote){
+      if(el.id === "aec"){
+        value ? hide(exposure) : show(exposure)
+      } else if(el.id === "agc"){
+        if (value) {
+          show(gainCeiling)
+          hide(agcGain)
+        } else {
+          hide(gainCeiling)
+          show(agcGain)
+        }
+      }
+    }
+  }
 
   setTimeout(() => { streamButton.click(); }, 2000);
 });

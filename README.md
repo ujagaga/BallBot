@@ -16,21 +16,17 @@ The screw holles are made smaller and screws are heated using a soldering iron b
 
 ## Server
 
-1. ESP32 CAM configured as a WiFi access point
+1. ESP32 CAM configured as a WiFi access point or station. You can choose on initialization of WiFi
 2. ESP32 runs an HTTP server to provide video stream, manual control and API access
 
 # Updating ESP32 firmware via WiFi
 There is an /api/ota endpoint to which you need to make a post request to trigger the update. Basically you need to serve the image file and then trigger the update by sending the url where the image can be downloaded. I provided a python script to simplify this at:
 
-        fw_update_helper/update_firmware.py
+        tools/update_firmware.py
 
 The only requirement is `pip install requests`
 
-## Status
-- The schematic and the 3D model are finished.
-- The ESP32 CAM firmware update via WiFi works
-- The Firmware update python file is OK
-- working on ESP32 HTTP server UI
+I prepared other helper scripts to build and upload the image, but uploading does not seem to produce a stable image like the Arduino IDE uploader does.
 
 ## WARNING
 The WiFi AP causes a lot of electrical noise, so the camera tends to freeze due to processing errors. To prevent it, make sure you have a module with an antenna, which you place on the side, behind the camera and glue the camera to the SD card slot to allow it to shield it.

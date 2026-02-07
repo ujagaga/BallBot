@@ -7,16 +7,16 @@
 
 void setup() {
   DISTANCE_init();
-  // MOTOR_init();
+  MOTOR_init();
   CAM_Init();
   WIFIC_init(true);
   HTTPSRV_init();
 }
 
 void loop() {
-  // if (!HTTPC_fwUpdateInProgress()) {
-  //   MOTOR_process();
-  // }
+  if (!HTTPC_fwUpdateInProgress()) {
+    MOTOR_process();
+  }
   HTTPC_process();
   delay(20);
 }
