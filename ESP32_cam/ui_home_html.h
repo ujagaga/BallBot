@@ -549,9 +549,22 @@ input.toggle-section-button:checked+section.toggle-section {
 document.addEventListener('DOMContentLoaded', function (event) {
   var baseHost = document.location.origin;
   var streamUrl = baseHost + ':81';
-  
-  let moveTimeout;
-  let isMoving = false;
+  var wsUrl = (document.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + document.location.host + '/ws';
+  var ws;
+
+  function initWebSocket() {
+    ws = new WebSocket(wsUrl);
+    ws.onopen = function() {
+      logResponse('WS Connected');
+    };
+    ws.onclose = function() {
+      logResponse('WS Disconnected');
+      setTimeout(initWebSocket, 2000);
+    };
+    ws.onmessage = function(event) {
+      logResponse(`RX: ${event.data}`);
+    };
+  }
 
   function logResponse(text) {
     const log = document.getElementById('response-log');
@@ -563,56 +576,34 @@ document.addEventListener('DOMContentLoaded', function (event) {
   const show = el => el && el.classList.remove('hidden');
   const hide = el => el && el.classList.add('hidden');
 
-  const sendAction = async (action) => {
-    const query = `${baseHost}/command?action=${action}`;
-    try {
-      const response = await fetch(query);
-      const data = await response.text();
-      logResponse(`${action}: ${data}`);
-    } catch (e) {
-      logResponse(`${action}: Error`);
+  const sendAction = (action) => {
+    if(ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(action);
+        logResponse(`TX: ${action}`);
+    } else {
+        logResponse(`Error: WS not open`);
     }
   };
 
-  const moveLoop = async (action) => {
-    if (!isMoving) return;
-    
-    await sendAction(action); 
-    
-    moveTimeout = setTimeout(() => {
-      moveLoop(action); 
-    }, 300);
-  };
-
-  const startMoving = (action) => {
-    if (isMoving) return;
-    isMoving = true;
-    moveLoop(action);
-  };
-
-  const stopMoving = () => {
-    isMoving = false;
-    clearTimeout(moveTimeout);
-    sendAction('stop');
-  };
-
-  const attachHoldEvents = (btnId, action) => {
+  const attachButtonEvents = (btnId, action) => {
     const btn = document.getElementById(btnId);
     if (!btn) return;
     
-    btn.onmousedown = () => startMoving(action);
-    btn.onmouseup = stopMoving;
-    btn.onmouseleave = stopMoving;
+    btn.onmousedown = () => sendAction(action);
+    btn.onmouseup = () => sendAction('stop');
+    btn.onmouseleave = () => sendAction('stop');
     
-    btn.ontouchstart = (e) => { e.preventDefault(); startMoving(action); };
-    btn.ontouchend = (e) => { e.preventDefault(); stopMoving(); };
+    btn.ontouchstart = (e) => { e.preventDefault(); sendAction(action); };
+    btn.ontouchend = (e) => { e.preventDefault(); sendAction('stop'); };
   };
 
+  initWebSocket();
+
   // Attach Joystick
-  attachHoldEvents('move-fwd', 'fwd');
-  attachHoldEvents('move-rev', 'rev');
-  attachHoldEvents('move-left', 'left');
-  attachHoldEvents('move-right', 'right');
+  attachButtonEvents('move-fwd', 'fwd');
+  attachButtonEvents('move-rev', 'rev');
+  attachButtonEvents('move-left', 'left');
+  attachButtonEvents('move-right', 'right');
 
   // Single Click Actions
   document.getElementById('get-distance').onclick = () => sendAction('distance');
