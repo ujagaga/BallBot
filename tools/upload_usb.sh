@@ -12,4 +12,4 @@ SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 cd $SCRIPT_DIR
 echo "Uploading from ../build"
 
-/usr/local/bin/arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32 --input-dir ../build
+/usr/local/bin/arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32cam --input-dir ../build
