@@ -1,12 +1,12 @@
 #pragma once
 
 #include <stdint.h>
-#define SERVO_STEER_PIN (15)
-#define SERVO_CLAW_PIN (13)
-#define SERVO_ARM_PIN (14)
-#define BLDC_SPEED_PIN (12)
+#define SERVO_STEER_PIN (21)
+#define SERVO_CLAW_PIN (38)
+#define SERVO_ARM_PIN (47)
+#define BLDC_SPEED_PIN (14)
 #define BLDC_DIR_PIN (2)
-#define BLDC_TAHO_PIN (4)
+#define BLDC_TAHO_PIN (48)
 
 #define SERVO_STEER_SPEED (3)
 #define SERVO_CLAW_SPEED (5)

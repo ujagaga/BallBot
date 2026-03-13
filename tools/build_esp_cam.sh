@@ -13,10 +13,10 @@ cd $SCRIPT_DIR
 rm -rf ../build
 
 # Copy custom partition table to Arduino package directory
-PARTITION_DIR="$HOME/.arduino15/packages/esp32/hardware/esp32/3.3.6/tools/partitions"
+PARTITION_DIR="$HOME/.arduino15/packages/esp32/hardware/esp32/3.3.7/tools/partitions"
 cp partitions.csv "$PARTITION_DIR/custom.csv"
 
 echo "Building ESP32_cam"
-/usr/local/bin/arduino-cli compile --fqbn esp32:esp32:esp32cam \
+/usr/local/bin/arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=app3M_fat9M_16MB,PSRAM=opi \
 --build-path ../build \
---build-property "build.partitions=custom" ../ESP32_cam
+--build-property "build.partitions=app3M_fat9M_16MB" ../ESP32_cam

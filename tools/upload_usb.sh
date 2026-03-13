@@ -2,7 +2,7 @@
 
 PROJECT_NAME="ESP32_cam"
 ESP_TOOL="$HOME/.arduino15/packages/esp32/tools/esptool_py/5.1.0/esptool"
-BOOTLOADER_PATH="$HOME/.arduino15/packages/esp32/hardware/esp32/3.3.6/tools/partitions/boot_app0.bin"
+BOOTLOADER_PATH="$HOME/.arduino15/packages/esp32/hardware/esp32/3.3.7/tools/partitions/boot_app0.bin"
 
 # Get the path of the script as it was called (might be a symlink)
 SCRIPT_PATH="$BASH_SOURCE"
@@ -16,7 +16,7 @@ SCRIPT_DIR=$(dirname "${SCRIPT_PATH}")
 cd "${SCRIPT_DIR}"
 echo "Uploading from ../build"
 
-${ESP_TOOL} --chip esp32 --port /dev/ttyUSB0 --baud 460800 \
+${ESP_TOOL} --chip esp32s3 --port /dev/ttyACM0 --baud 460800 \
 --before default-reset --after hard-reset write-flash  -z \
 --flash-mode keep --flash-freq keep --flash-size keep \
 0x1000 ../build/${PROJECT_NAME}.ino.bootloader.bin \

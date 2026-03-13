@@ -25,11 +25,11 @@ void CAM_Init() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_SVGA;
+  config.frame_size = FRAMESIZE_XGA;
   config.pixel_format = PIXFORMAT_JPEG;
   config.grab_mode = CAMERA_GRAB_LATEST;
   config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 10;
+  config.jpeg_quality = 8;
   config.fb_count = 2;
 
   camInitialized = (esp_camera_init(&config) == ESP_OK);
@@ -51,10 +51,11 @@ void CAM_Stop() {
 void CAM_preset() {
   if (camInitialized) {
     sensor_t *s = esp_camera_sensor_get();
-    s->set_gainceiling(s, GAINCEILING_16X);
-    s->set_lenc(s, 1);
-    s->set_wpc(s, 1);
-    s->set_bpc(s, 1);
-    s->set_wb_mode(s, 3);
+    // s->set_gainceiling(s, GAINCEILING_16X);
+    // s->set_lenc(s, 1);
+    // s->set_wpc(s, 1);
+    // s->set_bpc(s, 1);
+    // s->set_wb_mode(s, 3);
+    s->set_vflip(s, 1);
   }
 }

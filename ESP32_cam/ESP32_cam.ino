@@ -11,6 +11,7 @@ void setup() {
   CAM_Init();
   WIFIC_init(true);
   HTTPSRV_init();
+  CAM_preset();
 }
 
 void loop() {
