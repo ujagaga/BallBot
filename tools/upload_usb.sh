@@ -19,7 +19,7 @@ echo "Uploading from ../build"
 ${ESP_TOOL} --chip esp32s3 --port /dev/ttyACM0 --baud 460800 \
 --before default-reset --after hard-reset write-flash  -z \
 --flash-mode keep --flash-freq keep --flash-size keep \
-0x1000 ../build/${PROJECT_NAME}.ino.bootloader.bin \
+0x0 ../build/${PROJECT_NAME}.ino.bootloader.bin \
 0x8000 ../build/${PROJECT_NAME}.ino.partitions.bin \
 0xe000 ${BOOTLOADER_PATH} \
 0x10000 ../build/${PROJECT_NAME}.ino.bin 
